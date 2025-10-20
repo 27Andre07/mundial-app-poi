@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MundialApp 2026</title>
+    <link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Columna de Grupos (Servidores) -->
+        <nav class="servers-column" id="groups-list">
+            <!-- Ícono para Torneo de Predicciones -->
+            <div class="server-icon tournament-icon" id="tournament-btn" title="Torneo de Predicciones">🏆</div>
+            <div class="server-separator"></div>
+            <div class="server-icon add-server" id="add-group-btn" title="Crear Grupo">+</div>
+        
+            <a href="tienda.html" class="server-icon shop-icon" title="Tienda del Mundial">
+            🛒
+            </a>
+
+
+        </nav>
+
+        <!-- Columna de Canales y Tareas -->
+        <aside class="channels-column">
+            <div class="channels-header" id="group-name-header">Selecciona un Grupo</div>
+            <div id="channels-container"></div>
+        </aside>
+
+        <!-- Vista Principal (Chat y Miembros) -->
+        <main class="main-view">
+            <header class="chat-header">
+                <h2>Selecciona un canal</h2>
+                <div class="header-icons">
+                    <span onclick="showMembersPanel()" title="Ver miembros">👥</span>
+                    <span onclick="showGroupOptions()" title="Opciones">⚙️</span>
+                </div>
+            </header>
+            <div class="content-area">
+                <div class="chat-area">
+                    <div class="chat-messages">
+                        <div class="message">
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <strong class="user-name">Sistema</strong>
+                                    <span class="timestamp">Ahora</span>
+                                </div>
+                                <div class="message-text">¡Bienvenido a MundialApp 2026! 🏆<br>Selecciona un grupo y canal para comenzar a chatear.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-box">
+                        <div class="input-actions">
+                            <span onclick="prepareLocationShare()" title="Compartir ubicación" class="action-icon">📍</span>
+                            <span onclick="prepareFileUpload()" title="Subir archivo" class="action-icon">📎</span>
+                        </div>
+                        <input type="text" placeholder="Selecciona un canal para comenzar..." disabled>
+                        <button class="btn" disabled>Enviar</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Vista del Torneo de Predicciones -->
+    <div id="tournament-view" class="tournament-main-view d-none">
+        <main class="tournament-content">
+            <header class="tournament-header">
+                <h2>🏆 Torneo de Predicciones - Jornada 1</h2>
+                <div class="header-icons">
+                    <span onclick="showTournamentInfo()" title="Información del torneo">ℹ️</span>
+                    <span onclick="showTournamentHistory()" title="Historial">📊</span>
+                </div>
+            </header>
+            <div class="predictions-container">
+                <div class="matches-column">
+                    <h3>Ingresa tus predicciones</h3>
+                    <div class="match-prediction-card">
+                        <div class="team-info">
+                            <img src="https://flagcdn.com/24x18/mx.png" alt="Bandera MX"> MÉXICO
+                        </div>
+                        <div class="score-inputs">
+                            <input type="number" class="score-input" min="0" max="99" id="score-mx">
+                            <span>-</span>
+                            <input type="number" class="score-input" min="0" max="99" id="score-us">
+                        </div>
+                        <div class="team-info right">
+                            <img src="https://flagcdn.com/24x18/us.png" alt="Bandera US"> EE.UU.
+                        </div>
+                    </div>
+                    <div class="match-prediction-card">
+                        <div class="team-info">
+                            <img src="https://flagcdn.com/24x18/ca.png" alt="Bandera CA"> CANADÁ
+                        </div>
+                        <div class="score-inputs">
+                            <input type="number" class="score-input" min="0" max="99" id="score-ca">
+                            <span>-</span>
+                            <input type="number" class="score-input" min="0" max="99" id="score-de">
+                        </div>
+                        <div class="team-info right">
+                            <img src="https://flagcdn.com/24x18/de.png" alt="Bandera DE"> ALEMANIA
+                        </div>
+                    </div>
+                    <div class="match-prediction-card">
+                        <div class="team-info">
+                            <img src="https://flagcdn.com/24x18/br.png" alt="Bandera BR"> BRASIL
+                        </div>
+                        <div class="score-inputs">
+                            <input type="number" class="score-input" min="0" max="99" id="score-br">
+                            <span>-</span>
+                            <input type="number" class="score-input" min="0" max="99" id="score-ar">
+                        </div>
+                        <div class="team-info right">
+                            <img src="https://flagcdn.com/24x18/ar.png" alt="Bandera AR"> ARGENTINA
+                        </div>
+                    </div>
+                    <button class="tournament-btn" onclick="savePredictions()">Guardar Predicciones</button>
+                </div>
+                <div class="leaderboard-column">
+                    <h3>📊 Leaderboard de la Jornada</h3>
+                    <ul class="leaderboard-list" id="tournament-leaderboard">
+                        <li><span>🥇 1. JuanPerez</span> <span class="points">150 pts</span></li>
+                        <li><span>🥈 2. Admin</span> <span class="points">125 pts</span></li>
+                        <li><span>🥉 3. TuUsuario</span> <span class="points">110 pts</span></li>
+                        <li><span>4. Maria</span> <span class="points">90 pts</span></li>
+                    </ul>
+                    
+                    <div class="user-tournament-stats">
+                        <h4>Tus Estadísticas</h4>
+                        <div class="stat-item">
+                            <span>Predicciones correctas:</span>
+                            <span id="user-correct-predictions">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>Puntos totales:</span>
+                            <span id="user-total-points">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>Posición:</span>
+                            <span id="user-position">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Ventana para crear un grupo nuevo -->
+    <div id="add-group-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Crear un nuevo Grupo</h3>
+            <p>Dale un nombre a tu nuevo grupo de la Copa Mundial.</p>
+            <input type="text" id="new-group-name" placeholder="Ej: Selección Mexicana">
+            <div class="modal-actions">
+                <button id="cancel-create-group" class="btn btn-secondary">Cancelar</button>
+                <button id="confirm-create-group" class="btn btn-primary">Crear</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ventana para las opciones de llamada -->
+    <div id="call-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Opciones de llamada</h3>
+            <div class="modal-actions" style="justify-content: center;">
+                <button class="btn btn-secondary" onclick="alert('Función de llamada - Próximamente')">Hacer Llamada</button>
+                <button class="btn btn-primary" onclick="alert('Función de videollamada - Próximamente')">Hacer Videollamada</button>
+            </div>
+            <button id="cancel-call" class="btn btn-secondary" style="margin-top: 15px;" onclick="closeModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Enlace al archivo JavaScript -->
+    <script src="../js/tasks.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+/* Estilos Generales y Variables de Color */
+:root {
+    --primary-color: #1e90ff;
+    --background-dark: #2c2f33;
+    --background-medium: #23272a;
+    --background-light: #36393f;
+    --text-color: #ffffff;
+    --text-muted: #b9bbbe;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: var(--background-medium);
+    color: var(--text-color);
+}
+
+/* Estilos para las páginas de Login y Registro */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: url('https://images.unsplash.com/photo-1511886921339-169a1cdde216?q=80&w=2070') no-repeat center center/cover;
+}
+
+.auth-form {
+    background-color: rgba(35, 39, 42, 0.9);
+    padding: 40px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.auth-form h1, .auth-form h2 {
+    margin-bottom: 10px;
+}
+
+.auth-form h2 {
+    color: var(--text-muted);
+    font-weight: normal;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text-muted);
+}
+
+.input-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--background-light);
+    border-radius: 4px;
+    background-color: var(--background-dark);
+    color: var(--text-color);
+}
+
+.btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--primary-color);
+    color: var(--text-color);
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #1c86e0;
+}
+
+.auth-switch {
+    margin-top: 20px;
+    color: var(--text-muted);
+}
+
+.auth-switch a {
+    color: var(--primary-color);
+    text-decoration: none;
+}

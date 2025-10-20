@@ -1,0 +1,134 @@
+/* Estilos generales */
+:root {
+    --background-dark: #2f3136;
+    --background-medium: #36393f;
+    --background-light: #40444b;
+    --text-color: #dcddde;
+    --primary-color: #7289da;
+    --success-color: #43b581;
+    --error-color: #f04747;
+}
+
+body {
+    background-color: var(--background-dark);
+    color: var(--text-color);
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+/* Contenedor principal */
+.shop-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Header */
+.shop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: var(--background-medium);
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.shop-header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.back-btn {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+.back-btn:hover {
+    color: #ffffff;
+}
+
+.user-points {
+    background-color: var(--background-dark);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 16px;
+}
+
+.user-points strong {
+    color: var(--success-color);
+    margin-left: 8px;
+}
+
+/* Cuadrícula de artículos */
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+/* Tarjeta de artículo */
+.shop-item {
+    background-color: var(--background-medium);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--background-light);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.shop-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.item-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.shop-item h3 {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    color: #ffffff;
+}
+
+.shop-item p {
+    font-size: 14px;
+    color: #b9bbbe;
+    flex-grow: 1; /* Para que el botón siempre quede abajo */
+    margin: 0 0 20px 0;
+}
+
+.item-price {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--success-color);
+    margin-bottom: 20px;
+}
+
+.buy-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.buy-btn:hover {
+    background-color: #677bc4;
+}
+
+.buy-btn:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}

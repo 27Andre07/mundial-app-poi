@@ -1,0 +1,86 @@
+/* Estilos Generales y Variables de Color */
+:root {
+    --primary-color: #1e90ff; /* Azul brillante */
+    --background-dark: #2c2f33;
+    --text-color: #ffffff;
+    --text-muted: #b9bbbe;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: var(--background-dark);
+    color: var(--text-color);
+}
+
+/* Estilos específicos para la página de Bienvenida */
+.landing-container {
+    height: 100vh;
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1511886921339-169a1cdde216?q=80&w=2070') no-repeat center center/cover;
+    display: flex;
+    flex-direction: column;
+}
+
+.landing-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.btn {
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.btn-nav {
+    background-color: white;
+    color: var(--background-dark);
+    padding: 10px 20px;
+}
+
+.btn-nav:hover {
+    background-color: #f0f0f0;
+}
+
+.landing-header {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 0 20px;
+}
+
+.landing-header h1 {
+    font-size: 48px;
+    max-width: 600px;
+    margin-bottom: 20px;
+}
+
+.landing-header p {
+    font-size: 18px;
+    max-width: 600px;
+    margin-bottom: 30px;
+    color: var(--text-muted);
+}
+
+.btn-large {
+    font-size: 20px;
+    padding: 15px 30px;
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-large:hover {
+    background-color: #1c86e0;
+}
