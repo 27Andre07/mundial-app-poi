@@ -1,4 +1,4 @@
-const API_BASE = '../api/';
+const API_BASE = 'api/';
 
 // Variables globales
 let currentUser = null;

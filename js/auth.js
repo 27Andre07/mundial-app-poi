@@ -1,4 +1,4 @@
-const API_BASE = '../api/'; // Cambiar según tu estructura de carpetas
+const API_BASE = 'api/'; // Cambiar según tu estructura de carpetas
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');

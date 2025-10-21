@@ -1,4 +1,4 @@
-const API_BASE = '../api/';
+const API_BASE = 'api/';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Cargar datos del usuario y sus puntos
