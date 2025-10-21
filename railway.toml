@@ -1,5 +1,5 @@
 [build]
-builder = "nixpacks"
+providers = ["php", "apache"]
 
 [deploy]
 startCommand = "apache2-foreground"
