@@ -300,7 +300,7 @@ function appendMessage(message) {
     const messagesContainer = document.querySelector('.chat-messages');
     const messageEl = document.createElement('div');
     messageEl.className = 'message';
-    const messageDate = new Date(message.created_at);
+    const messageDate = new Date(message.created_at.replace(' ', 'T'));
     const timestamp = messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     let messageContentHTML = formatMessageContent(message.content);
