@@ -717,6 +717,7 @@ async function handleInviteMember() {
     const response = await fetch(`${API_BASE}groups.php`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
+        credentials: 'include',
         body: JSON.stringify({ 
             action: 'invite_member', 
             group_id: currentGroup.id,
