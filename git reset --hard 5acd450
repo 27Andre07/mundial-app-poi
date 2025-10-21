@@ -1,0 +1,29 @@
+[33mebc2aa0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{0}: reset: moving to ebc2aa0
+[33mebc2aa0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{1}: reset: moving to HEAD~4
+[33mc3cbdbf[m HEAD@{2}: reset: moving to HEAD~4
+[33m5acd450[m HEAD@{3}: commit: Corregir formato de fecha para timestamps
+[33m1573af6[m HEAD@{4}: commit: Restaurar funcionalidad de subida de archivos a la BD
+[33ma5b5d6c[m HEAD@{5}: commit: Restaurar funcionalidad de subida de archivos a la BD
+[33m28f4c64[m HEAD@{6}: reset: moving to HEAD~3
+[33m3ea6a44[m HEAD@{7}: commit: cambios
+[33meb615cb[m HEAD@{8}: commit: cambios
+[33mb568637[m HEAD@{9}: commit: cambios
+[33m28f4c64[m HEAD@{10}: commit: Limpiar archivos PHP de caracteres inválidos (versión final)
+[33mc3cbdbf[m HEAD@{11}: commit: Limpiar archivos PHP de caracteres inválidos (versión final)
+[33m05f2154[m HEAD@{12}: commit: Limpiar archivos PHP de caracteres inválidos (versión final)
+[33ma6c133e[m HEAD@{13}: commit: cambios
+[33mc8a94e4[m HEAD@{14}: commit: Añadir configuración de PHP y socket de MySQL
+[33mebc2aa0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{15}: commit: Mover require_once dentro de las funciones
+[33m6bd1645[m HEAD@{16}: commit: cambios
+[33m21f5598[m HEAD@{17}: commit: cambios
+[33m58c2838[m HEAD@{18}: commit: cambios
+[33mad69d4e[m HEAD@{19}: commit: Limpiar archivos PHP de caracteres inválidos
+[33mc758d9b[m HEAD@{20}: commit: Corregir rutas de la API en archivos JS
+[33m20c97b4[m HEAD@{21}: commit: Añadir .htaccess y corregir rutas finales
+[33m84b24d9[m HEAD@{22}: commit: Mover HTML a la raíz y corregir todas las rutas
+[33m8e5fa1d[m HEAD@{23}: commit: Reemplazar railway.toml con Dockerfile para despliegue
+[33m0d2b8ef[m HEAD@{24}: commit: Intentar con el servidor integrado de PHP
+[33m1e130d5[m HEAD@{25}: commit: Actualizar railway.toml para especificar providers
+[33m0f83700[m HEAD@{26}: commit: Añadir archivo de configuración para Railway
+[33mf62f7dc[m HEAD@{27}: Branch: renamed refs/heads/master to refs/heads/main
+[33mf62f7dc[m HEAD@{29}: commit (initial): Versión inicial del proyecto
