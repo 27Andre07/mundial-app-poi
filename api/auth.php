@@ -2,7 +2,6 @@
 require_once 'config.php';
 
 $conn = getDBConnection();
-
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -31,7 +30,6 @@ if ($method === 'POST') {
 
 closeDBConnection($conn);
 
-// Función de registro
 function register($conn, $data) {
     $username = sanitize($data['username'] ?? '');
     $email = sanitize($data['email'] ?? '');
@@ -43,23 +41,20 @@ function register($conn, $data) {
     }
     
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-    
     $stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
     $stmt->bind_param("sss", $username, $email, $hashed_password);
     
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'Registro exitoso']);
     } else {
-        echo json_encode(['success' => false, 'error' => 'El email ya está en uso o hubo un error.']);
+        echo json_encode(['success' => false, 'error' => 'El email ya está en uso.']);
     }
     $stmt->close();
 }
 
-// Función de login
 function login($conn, $data) {
     $email = sanitize($data['email'] ?? '');
     $password = $data['password'] ?? '';
-
     $stmt = $conn->prepare("SELECT id, username, email, password FROM users WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
@@ -71,7 +66,6 @@ function login($conn, $data) {
     }
     
     $user = $result->fetch_assoc();
-    
     if (!password_verify($password, $user['password'])) {
         echo json_encode(['success' => false, 'error' => 'Credenciales incorrectas']);
         return;
@@ -85,38 +79,21 @@ function login($conn, $data) {
     $_SESSION['username'] = $user['username'];
     $_SESSION['email'] = $user['email'];
     
-    echo json_encode([
-        'success' => true,
-        'user' => [
-            'id' => $user['id'],
-            'username' => $user['username'],
-            'email' => $user['email']
-        ]
-    ]);
+    echo json_encode(['success' => true, 'user' => ['id' => $user['id'], 'username' => $user['username'], 'email' => $user['email']]]);
 }
 
-// Verificar autenticación
 function checkAuth($conn) {
     if (isset($_SESSION['user_id'])) {
         $user_id = $_SESSION['user_id'];
         $stmt = $conn->prepare("UPDATE users SET last_seen = NOW(), is_online = TRUE WHERE id = ?");
         $stmt->bind_param("i", $user_id);
         $stmt->execute();
-        
-        echo json_encode([
-            'authenticated' => true,
-            'user' => [
-                'id' => $_SESSION['user_id'],
-                'username' => $_SESSION['username'],
-                'email' => $_SESSION['email']
-            ]
-        ]);
+        echo json_encode(['authenticated' => true, 'user' => ['id' => $_SESSION['user_id'], 'username' => $_SESSION['username'], 'email' => $_SESSION['email']]]);
     } else {
         echo json_encode(['authenticated' => false]);
     }
 }
 
-// Cerrar sesión
 function logout($conn) {
     if (isset($_SESSION['user_id'])) {
         $user_id = $_SESSION['user_id'];
