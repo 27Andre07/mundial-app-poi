@@ -2,7 +2,7 @@
 // Configuración de la base de datos
 define('DB_HOST', 'gondola.proxy.rlwy.net');
 define('DB_USER', 'root');
-define('DB_PASS', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'); // Cambiar si tienes contraseña en XAMPP
+define('DB_PASS', 'HUFwCLYdpndrZfStJVmZrbRgDgbcYUDx'); // Cambiar si tienes contraseña en XAMPP
 define('DB_NAME', 'railway');
 
 // Crear conexión
