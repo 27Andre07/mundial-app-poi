@@ -300,39 +300,35 @@ function appendMessage(message) {
     const messagesContainer = document.querySelector('.chat-messages');
     const messageEl = document.createElement('div');
     messageEl.className = 'message';
-    
-    const messageDate = new Date(message.createdAt);
-    const timestamp = messageDate.toLocaleTimeString();
-    
-    let messageContent = formatMessageContent(message.content);
-    
-    // Ubicación
-    if (message.location) {
-        const mapUrl = `https://www.google.com/maps?q=${message.location.latitude},${message.location.longitude}`;
-        messageContent += `<br><a href="${mapUrl}" target="_blank">📍 Ver ubicación en el mapa</a>`;
-    }
-    
-    // Archivo
-    if (message.fileUrl) {
-        if (message.fileType && message.fileType.startsWith('image/')) {
-            messageContent += `<br><img src="../${message.fileUrl}" alt="Imagen compartida" style="max-width: 300px; border-radius: 8px; margin-top: 8px;">`;
-        } else if (message.fileType && message.fileType.startsWith('video/')) {
-            messageContent += `<br><video controls style="max-width: 300px; border-radius: 8px; margin-top: 8px;"><source src="../${message.fileUrl}" type="${message.fileType}">Tu navegador no soporta video.</video>`;
+    const messageDate = new Date(message.created_at);
+    const timestamp = messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let messageContentHTML = formatMessageContent(message.content);
+
+    // --- LÓGICA NUEVA ---
+    // Si el mensaje tiene datos de archivo (file_data)
+    if (message.file_data && message.file_type) {
+        // Construye una URL de datos a partir de la información Base64
+        const dataUrl = `data:${message.file_type};base64,${message.file_data}`;
+        
+        // Si es una imagen, muestra una etiqueta <img>
+        if (message.file_type.startsWith('image/')) {
+            messageContentHTML += `<br><img src="${dataUrl}" alt="${message.file_name}" style="max-width: 300px; border-radius: 8px; margin-top: 8px;">`;
         } else {
-            messageContent += `<br><a href="../${message.fileUrl}" target="_blank">📎 ${message.fileName || 'Archivo adjunto'}</a>`;
+        // Si es otro tipo de archivo, muestra un enlace de descarga
+            messageContentHTML += `<br><a href="${dataUrl}" download="${message.file_name}">📎 Descargar: ${message.file_name}</a>`;
         }
     }
-    
+
     messageEl.innerHTML = `
         <div class="message-content">
             <div class="message-header">
                 <strong class="user-name">${message.username}</strong>
                 <span class="timestamp">${timestamp}</span>
             </div>
-            <div class="message-text">${messageContent}</div>
+            <div class="message-text">${messageContentHTML}</div>
         </div>
     `;
-    
     messagesContainer.appendChild(messageEl);
 }
 

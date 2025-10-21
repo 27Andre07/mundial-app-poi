@@ -60,7 +60,7 @@ function getMessages($conn, $user_id) {
     if ($last_id > 0) {
         // Solo obtener mensajes nuevos (para polling)
         $stmt = $conn->prepare("
-            SELECT m.id, m.content, m.file_url, m.file_name, m.file_type, 
+            SELECT m.id, m.content, m.file_name, m.file_type, TO_BASE64(m.file_data) as file_data, 
                    m.latitude, m.longitude, m.created_at,
                    u.id as user_id, u.username
             FROM messages m
@@ -72,7 +72,7 @@ function getMessages($conn, $user_id) {
     } else {
         // Obtener últimos N mensajes
         $stmt = $conn->prepare("
-            SELECT m.id, m.content, m.file_url, m.file_name, m.file_type, 
+            SELECT m.id, m.content, m.file_name, m.file_type, TO_BASE64(m.file_data) as file_data, 
                    m.latitude, m.longitude, m.created_at,
                    u.id as user_id, u.username
             FROM messages m
@@ -246,7 +246,7 @@ function uploadFile($conn, $user_id) {
             INSERT INTO messages (channel_id, user_id, content, file_url, file_name, file_type) 
             VALUES (?, ?, ?, ?, ?, ?)
         ");
-        $stmt->bind_param("iissss", $channel_id, $user_id, $content, $file_url, $file['name'], $file['type']);
+        $stmt->bind_param("iisssb", $channel_id, $user_id, $content, $file_name, $file_type, $file_data);
         
         if ($stmt->execute()) {
             echo json_encode([
