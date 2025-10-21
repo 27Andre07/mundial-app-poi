@@ -1,37 +1,36 @@
 <?php
-// Configuración de la base de datos (versión para Railway)
-
-// Lee las variables de entorno que Railway nos proporcionará
-$db_host = getenv('MYSQLHOST');
-$db_user = getenv('MYSQLUSER');
-$db_pass = getenv('MYSQLPASSWORD');
-$db_name = getenv('MYSQLDATABASE');
-$db_port = getenv('MYSQLPORT');
+// Configuración de la base de datos
+define('DB_HOST', 'gondola.proxy.rlwy.net');
+define('DB_USER', 'root');
+define('DB_PASS', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'); // Cambiar si tienes contraseña en XAMPP
+define('DB_NAME', 'railway');
 
 // Crear conexión
 function getDBConnection() {
-    global $db_host, $db_user, $db_pass, $db_name, $db_port;
+    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
     
-    // Se añade el puerto a la conexión, requerido por Railway
-    $conn = new mysqli($db_host, $db_user, $db_pass, $db_name, $db_port);
-    
+    // Verificar conexión
     if ($conn->connect_error) {
         die(json_encode([
             'success' => false,
-            'error' => 'Error de conexión a la BD: ' . $conn->connect_error
+            'error' => 'Error de conexión: ' . $conn->connect_error
         ]));
     }
     
+    // Establecer charset UTF-8
     $conn->set_charset("utf8mb4");
+    
     return $conn;
 }
 
+// Función para cerrar la conexión
 function closeDBConnection($conn) {
     if ($conn) {
         $conn->close();
     }
 }
 
+// Función para sanitizar datos de entrada
 function sanitize($data) {
     $data = trim($data);
     $data = stripslashes($data);
@@ -39,8 +38,19 @@ function sanitize($data) {
     return $data;
 }
 
+// Configurar headers para permitir CORS (desarrollo local)
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Content-Type: application/json; charset=UTF-8');
 
+// Manejar preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Iniciar sesión si no está iniciada
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
