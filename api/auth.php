@@ -1,5 +1,7 @@
 <?php
-// No incluimos config.php aquí arriba, lo haremos dentro de cada función.
+require_once 'config.php';
+
+$conn = getDBConnection();
 
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -10,34 +12,33 @@ if ($method === 'POST') {
     
     switch ($action) {
         case 'register':
-            register($data);
+            register($conn, $data);
             break;
         case 'login':
-            login($data);
+            login($conn, $data);
             break;
         case 'logout':
-            logout();
+            logout($conn);
             break;
         default:
             echo json_encode(['success' => false, 'error' => 'Acción POST no válida']);
     }
 } else if ($method === 'GET' && $action === 'check') {
-    checkAuth();
+    checkAuth($conn);
 } else {
     echo json_encode(['success' => false, 'error' => 'Método no válido']);
 }
 
-function register($data) {
-    require_once 'config.php';
-    $conn = getDBConnection();
-    
+closeDBConnection($conn);
+
+// Función de registro
+function register($conn, $data) {
     $username = sanitize($data['username'] ?? '');
     $email = sanitize($data['email'] ?? '');
     $password = $data['password'] ?? '';
     
     if (empty($username) || empty($email) || empty($password)) {
         echo json_encode(['success' => false, 'error' => 'Todos los campos son obligatorios']);
-        closeDBConnection($conn);
         return;
     }
     
@@ -49,27 +50,23 @@ function register($data) {
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'Registro exitoso']);
     } else {
-        echo json_encode(['success' => false, 'error' => 'El email ya está en uso.']);
+        echo json_encode(['success' => false, 'error' => 'El email ya está en uso o hubo un error.']);
     }
     $stmt->close();
-    closeDBConnection($conn);
 }
 
-function login($data) {
-    require_once 'config.php';
-    $conn = getDBConnection();
-
+// Función de login
+function login($conn, $data) {
     $email = sanitize($data['email'] ?? '');
     $password = $data['password'] ?? '';
 
-    $stmt = $conn->prepare("SELECT id, username, password FROM users WHERE email = ?");
+    $stmt = $conn->prepare("SELECT id, username, email, password FROM users WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $result = $stmt->get_result();
     
     if ($result->num_rows === 0) {
         echo json_encode(['success' => false, 'error' => 'Credenciales incorrectas']);
-        closeDBConnection($conn);
         return;
     }
     
@@ -77,7 +74,6 @@ function login($data) {
     
     if (!password_verify($password, $user['password'])) {
         echo json_encode(['success' => false, 'error' => 'Credenciales incorrectas']);
-        closeDBConnection($conn);
         return;
     }
     
@@ -87,34 +83,41 @@ function login($data) {
     
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['username'] = $user['username'];
+    $_SESSION['email'] = $user['email'];
     
     echo json_encode([
         'success' => true,
-        'user' => ['id' => $user['id'], 'username' => $user['username']]
+        'user' => [
+            'id' => $user['id'],
+            'username' => $user['username'],
+            'email' => $user['email']
+        ]
     ]);
-    
-    closeDBConnection($conn);
 }
 
-function checkAuth() {
-    require_once 'config.php';
-    $conn = getDBConnection();
-
+// Verificar autenticación
+function checkAuth($conn) {
     if (isset($_SESSION['user_id'])) {
+        $user_id = $_SESSION['user_id'];
+        $stmt = $conn->prepare("UPDATE users SET last_seen = NOW(), is_online = TRUE WHERE id = ?");
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        
         echo json_encode([
             'authenticated' => true,
-            'user' => ['id' => $_SESSION['user_id'], 'username' => $_SESSION['username']]
+            'user' => [
+                'id' => $_SESSION['user_id'],
+                'username' => $_SESSION['username'],
+                'email' => $_SESSION['email']
+            ]
         ]);
     } else {
         echo json_encode(['authenticated' => false]);
     }
-    closeDBConnection($conn);
 }
 
-function logout() {
-    require_once 'config.php';
-    $conn = getDBConnection();
-    
+// Cerrar sesión
+function logout($conn) {
     if (isset($_SESSION['user_id'])) {
         $user_id = $_SESSION['user_id'];
         $stmt = $conn->prepare("UPDATE users SET is_online = FALSE WHERE id = ?");
@@ -123,6 +126,5 @@ function logout() {
     }
     session_destroy();
     echo json_encode(['success' => true]);
-    closeDBConnection($conn);
 }
 ?>

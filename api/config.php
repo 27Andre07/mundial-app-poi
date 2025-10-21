@@ -1,23 +1,20 @@
 <?php
-// Configuración de la base de datos (versión para Railway)
+// --- VERSIÓN CON CREDENCIALES DIRECTAS ---
 
-// Lee las variables de entorno que Railway nos proporcionará
-$db_host = getenv('MYSQLHOST');
-$db_user = getenv('MYSQLUSER');
-$db_pass = getenv('MYSQLPASSWORD');
-$db_name = getenv('MYSQLDATABASE');
-$db_port = getenv('MYSQLPORT');
+// !! IMPORTANTE !!
+// Reemplaza los valores de abajo con los de TU base de datos de Railway
+define('DB_HOST', 'gondola.proxy.rlwy.net');     // Ej: gondola.proxy.rlwy.net
+define('DB_USER', 'root');
+define('DB_PASS', 'HUFwCLYdpndrZfStJVmZrbRgDgbcYUDx'); // La contraseña larga y aleatoria
+define('DB_NAME', 'railway');
+define('DB_PORT', '50016');   // Ej: 24351
 
 // Crear conexión
 function getDBConnection() {
-    global $db_host, $db_user, $db_pass, $db_name, $db_port;
-    
-    // Se añade el puerto a la conexión, requerido por Railway
     // El @ suprime el warning de PHP para asegurar que solo enviamos JSON si hay un error
-    @$conn = new mysqli($db_host, $db_user, $db_pass, $db_name, $db_port);
+    @$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
     
     if ($conn->connect_error) {
-        // Si la conexión falla, termina el script y devuelve un error JSON
         die(json_encode([
             'success' => false,
             'error' => 'Error de conexión a la BD: ' . $conn->connect_error
@@ -28,14 +25,12 @@ function getDBConnection() {
     return $conn;
 }
 
-// Función para cerrar la conexión
 function closeDBConnection($conn) {
     if ($conn) {
         $conn->close();
     }
 }
 
-// Función para sanitizar datos de entrada
 function sanitize($data) {
     $data = trim($data);
     $data = stripslashes($data);
@@ -45,7 +40,6 @@ function sanitize($data) {
 
 header('Content-Type: application/json; charset=UTF-8');
 
-// Iniciar sesión si no está iniciada
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
