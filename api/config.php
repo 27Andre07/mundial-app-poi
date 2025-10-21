@@ -18,7 +18,7 @@ function getDBConnection() {
     if ($conn->connect_error) {
         die(json_encode([
             'success' => false,
-            'error' => 'Error de conexión: ' . $conn->connect_error
+            'error' => 'Error de conexión a la BD: ' . $conn->connect_error
         ]));
     }
     
@@ -26,14 +26,12 @@ function getDBConnection() {
     return $conn;
 }
 
-// Función para cerrar la conexión
 function closeDBConnection($conn) {
     if ($conn) {
         $conn->close();
     }
 }
 
-// Función para sanitizar datos de entrada
 function sanitize($data) {
     $data = trim($data);
     $data = stripslashes($data);
@@ -43,7 +41,6 @@ function sanitize($data) {
 
 header('Content-Type: application/json; charset=UTF-8');
 
-// Iniciar sesión si no está iniciada
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
