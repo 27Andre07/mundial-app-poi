@@ -1005,7 +1005,7 @@ window.restartTournament = async function() {
     
     // Reiniciar predicciones en BD
     try {
-        const response = await fetch('api/predictions.php', {
+        const response = await fetch('https://mundialpoi-app.ngrok.app/api/predictions.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -1094,7 +1094,7 @@ window.restartTournament = async function() {
 
 async function syncMatchesToDB(matches) {
     try {
-        const response = await fetch('api/predictions.php', {
+        const response = await fetch('https://mundialpoi-app.ngrok.app/api/predictions.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -1120,7 +1120,7 @@ async function saveSimulationResults(results) {
     console.log('📤 Enviando resultados al servidor:', results);
     
     try {
-        const response = await fetch('api/predictions.php', {
+        const response = await fetch('https://mundialpoi-app.ngrok.app/api/predictions.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',

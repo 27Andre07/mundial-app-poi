@@ -1,10 +1,36 @@
 <?php
 // VERSIÓN LIMPIA CON CREDENCIALES DIRECTAS
 
-define('DB_HOST', 'mysql.railway.internal');
+// Configurar CORS para permitir acceso desde ngrok con credenciales
+$allowed_origins = [
+    'https://mundialpoi-app.ngrok.app',
+    'http://localhost',
+    'http://localhost:80',
+    'http://127.0.0.1'
+];
+
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+if (in_array($origin, $allowed_origins, true)) {
+    header("Access-Control-Allow-Origin: $origin");
+    header("Vary: Origin");
+    header("Access-Control-Allow-Credentials: true");
+} else {
+    // Sin credenciales si el origen no está permitido
+    header("Access-Control-Allow-Origin: https://mundialpoi-app.ngrok.app");
+}
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+// Manejar preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
-define('DB_PASS', 'xdbbcBXDipvUOGFvVHKFdXDMvSRjWnZK');
-define('DB_NAME', 'railway');
+define('DB_PASS', 'root');
+define('DB_NAME', 'poi');
 define('DB_PORT', '3306');
 
 function getDBConnection() {
@@ -26,8 +52,23 @@ function sanitize($data) {
     return htmlspecialchars(stripslashes(trim($data)));
 }
 
-// Iniciar sesión antes de cualquier output
+// Configurar sesión para trabajar con ngrok HTTPS
 if (session_status() === PHP_SESSION_NONE) {
+    // Configurar parámetros de sesión para HTTPS
+    ini_set('session.cookie_secure', '1');  // Solo HTTPS
+    ini_set('session.cookie_httponly', '1'); // No accesible desde JavaScript
+    ini_set('session.cookie_samesite', 'None'); // Permitir cross-site (necesario para ngrok)
+    ini_set('session.use_strict_mode', '1');
+    
+    session_set_cookie_params([
+        'lifetime' => 0, // Session cookie (expira al cerrar navegador)
+        'path' => '/',
+        'domain' => '', // Dominio actual
+        'secure' => true, // Solo HTTPS
+        'httponly' => true,
+        'samesite' => 'None' // Importante para ngrok
+    ]);
+    
     session_start();
 }
 

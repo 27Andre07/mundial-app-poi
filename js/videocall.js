@@ -4,7 +4,7 @@
 // =============================================
 
 // Conexión a Socket.IO
-const socket = io('http://localhost:3000');
+const socket = io('https://mundialpoi-ws.ngrok.app');
 
 // Variables globales de videollamada
 let localStream = null;

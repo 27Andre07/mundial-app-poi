@@ -45,7 +45,7 @@ async function loadPredictions() {
     
     try {
         // Obtener partidos de la jornada
-        const response = await fetch(`api/predictions.php?action=get_matches&jornada=${currentPredictionJornada}`, {
+        const response = await fetch(`https://mundialpoi-app.ngrok.app/api/predictions.php?action=get_matches&jornada=${currentPredictionJornada}`, {
             credentials: 'include'
         });
         
@@ -202,7 +202,7 @@ async function submitPredictions() {
     }
     
     try {
-        const response = await fetch('api/predictions.php', {
+        const response = await fetch('https://mundialpoi-app.ngrok.app/api/predictions.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -234,7 +234,7 @@ async function loadLeaderboard() {
     document.getElementById('current-leaderboard-jornada').textContent = jornada.name;
     
     try {
-        const response = await fetch(`api/predictions.php?action=get_leaderboard&jornada=${currentLeaderboardJornada}`, {
+        const response = await fetch(`https://mundialpoi-app.ngrok.app/api/predictions.php?action=get_leaderboard&jornada=${currentLeaderboardJornada}`, {
             credentials: 'include'
         });
         const data = await response.json();

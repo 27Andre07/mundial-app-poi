@@ -1,0 +1,15 @@
+version: "2"
+authtoken: 35nt5dAb1j5DCebvFkg2zHEnJXc_2ThJkXRBsN1etyWMsEGmQ
+
+tunnels:
+  php-app:
+    proto: http
+    addr: 8081
+    domain: mundialpoi-app.ngrok.app
+    inspect: true
+  
+  nodejs-ws:
+    proto: http
+    addr: 3000
+    domain: mundialpoi-ws.ngrok.app
+    inspect: true

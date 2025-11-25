@@ -1,22 +1,30 @@
 <?php
-// Desactivar todos los errores de PHP para que no interfieran con JSON
-error_reporting(0);
+// Desactivar display de errores pero mantener logs
+error_reporting(E_ALL);
 ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../dms_errors.log');
 
-require_once 'config.php';
+try {
+    require_once 'config.php';
 
-// Limpiar cualquier output buffer previo
-while (ob_get_level()) {
-    ob_end_clean();
+    // Limpiar cualquier output buffer previo
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+
+    // Iniciar output buffering limpio
+    ob_start();
+
+    // Asegurar que la respuesta sea JSON
+    header('Content-Type: application/json; charset=utf-8');
+
+    $conn = getDBConnection();
+} catch (Exception $e) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success' => false, 'error' => 'Init error: ' . $e->getMessage()]);
+    exit();
 }
-
-// Iniciar output buffering limpio
-ob_start();
-
-// Asegurar que la respuesta sea JSON
-header('Content-Type: application/json; charset=utf-8');
-
-$conn = getDBConnection();
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['success' => false, 'error' => 'No autenticado']);
@@ -204,48 +212,63 @@ function rejectContactRequest($conn, $data, $user_id) {
 
 // Obtener todas las conversaciones del usuario (solo contactos aceptados)
 function getConversations($conn, $user_id) {
-    $sql = "
-        SELECT DISTINCT
-            u.id as user_id,
-            u.username,
-            u.email,
-            (SELECT content FROM direct_messages dm2
-             WHERE (dm2.sender_id = u.id AND dm2.receiver_id = ?)
-                OR (dm2.sender_id = ? AND dm2.receiver_id = u.id)
-             ORDER BY dm2.created_at DESC LIMIT 1) as last_message,
-            (SELECT is_encrypted FROM direct_messages dm2
-             WHERE (dm2.sender_id = u.id AND dm2.receiver_id = ?)
-                OR (dm2.sender_id = ? AND dm2.receiver_id = u.id)
-             ORDER BY dm2.created_at DESC LIMIT 1) as is_encrypted,
-            (SELECT created_at FROM direct_messages dm2
-             WHERE (dm2.sender_id = u.id AND dm2.receiver_id = ?)
-                OR (dm2.sender_id = ? AND dm2.receiver_id = u.id)
-             ORDER BY dm2.created_at DESC LIMIT 1) as last_message_time,
-            (SELECT COUNT(*) FROM direct_messages dm3
-             WHERE dm3.sender_id = u.id AND dm3.receiver_id = ? AND dm3.is_read = 0) as unread_count
-        FROM users u
-        WHERE u.id IN (
-            SELECT CASE 
-                WHEN sender_id = ? THEN receiver_id
-                ELSE sender_id
-            END
-            FROM contact_requests
-            WHERE (sender_id = ? OR receiver_id = ?) AND status = 'accepted'
-        )
-        ORDER BY last_message_time DESC
-    ";
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iiiiiiiiii", $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $conversations = [];
-    while ($row = $result->fetch_assoc()) {
-        $conversations[] = $row;
+    try {
+        $sql = "
+            SELECT DISTINCT
+                u.id as user_id,
+                u.username,
+                u.email,
+                (SELECT content FROM direct_messages dm2
+                 WHERE (dm2.sender_id = u.id AND dm2.receiver_id = ?)
+                    OR (dm2.sender_id = ? AND dm2.receiver_id = u.id)
+                 ORDER BY dm2.created_at DESC LIMIT 1) as last_message,
+                (SELECT is_encrypted FROM direct_messages dm2
+                 WHERE (dm2.sender_id = u.id AND dm2.receiver_id = ?)
+                    OR (dm2.sender_id = ? AND dm2.receiver_id = u.id)
+                 ORDER BY dm2.created_at DESC LIMIT 1) as is_encrypted,
+                (SELECT created_at FROM direct_messages dm2
+                 WHERE (dm2.sender_id = u.id AND dm2.receiver_id = ?)
+                    OR (dm2.sender_id = ? AND dm2.receiver_id = u.id)
+                 ORDER BY dm2.created_at DESC LIMIT 1) as last_message_time,
+                (SELECT COUNT(*) FROM direct_messages dm3
+                 WHERE dm3.sender_id = u.id AND dm3.receiver_id = ? AND dm3.is_read = 0) as unread_count
+            FROM users u
+            WHERE u.id IN (
+                SELECT CASE 
+                    WHEN sender_id = ? THEN receiver_id
+                    ELSE sender_id
+                END
+                FROM contact_requests
+                WHERE (sender_id = ? OR receiver_id = ?) AND status = 'accepted'
+            )
+            ORDER BY 
+                CASE WHEN last_message_time IS NULL THEN 1 ELSE 0 END,
+                last_message_time DESC
+        ";
+        
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            throw new Exception("SQL prepare failed: " . $conn->error);
+        }
+        
+        $stmt->bind_param("iiiiiiiiii", $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id);
+        
+        if (!$stmt->execute()) {
+            throw new Exception("SQL execute failed: " . $stmt->error);
+        }
+        
+        $result = $stmt->get_result();
+        
+        $conversations = [];
+        while ($row = $result->fetch_assoc()) {
+            $conversations[] = $row;
+        }
+        
+        echo json_encode(['success' => true, 'conversations' => $conversations]);
+    } catch (Exception $e) {
+        error_log("getConversations error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
     }
-    
-    echo json_encode(['success' => true, 'conversations' => $conversations]);
 }
 
 // Obtener mensajes de una conversación específica
