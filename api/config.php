@@ -1,10 +1,10 @@
 <?php
 // VERSIÓN LIMPIA CON CREDENCIALES DIRECTAS
 
-define('DB_HOST', 'localhost');
+define('DB_HOST', 'mysql.railway.internal');
 define('DB_USER', 'root');
-define('DB_PASS', 'Diciembre02');
-define('DB_NAME', 'POI');
+define('DB_PASS', 'xdbbcBXDipvUOGFvVHKFdXDMvSRjWnZK');
+define('DB_NAME', 'railway');
 define('DB_PORT', '3306');
 
 function getDBConnection() {
