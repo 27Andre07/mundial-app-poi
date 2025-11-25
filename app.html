@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MundialApp 2026</title>
-    <link rel="stylesheet" href="../css/app.css">
+    <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
     <div class="app-container">
@@ -12,6 +12,10 @@
         <nav class="servers-column" id="groups-list">
             <!-- Ícono para Torneo de Predicciones -->
             <div class="server-icon tournament-icon" id="tournament-btn" title="Torneo de Predicciones">🏆</div>
+            
+            <!-- Ícono para Mensajes Directos -->
+            <div class="server-icon dm-icon" id="dm-btn" title="Mensajes Directos">💬</div>
+            
             <div class="server-separator"></div>
             <div class="server-icon add-server" id="add-group-btn" title="Crear Grupo">+</div>
         
@@ -19,7 +23,7 @@
             🛒
             </a>
 
-
+            <div class="logout-btn" id="logout-btn" title="Cerrar Sesión">🚪</div>
         </nav>
 
         <!-- Columna de Canales y Tareas -->
@@ -28,11 +32,27 @@
             <div id="channels-container"></div>
         </aside>
 
+        <!-- Columna de Mensajes Directos (oculta por defecto) -->
+        <aside class="dm-column d-none" id="dm-column">
+            <div class="channels-header">
+                <span>💬 Mensajes Directos</span>
+                <span class="add-dm-btn" id="add-dm-btn" title="Nuevo mensaje">+</span>
+            </div>
+            
+            <!-- Solicitudes pendientes -->
+            <div id="dm-requests-section" class="dm-requests-section"></div>
+            
+            <!-- Conversaciones -->
+            <div id="dm-conversations-list"></div>
+        </aside>
+
         <!-- Vista Principal (Chat y Miembros) -->
         <main class="main-view">
             <header class="chat-header">
                 <h2>Selecciona un canal</h2>
                 <div class="header-icons">
+                    <span id="video-call-btn" onclick="startVideoCall()" title="Iniciar videollamada" style="display: none;">📹</span>
+                    <span onclick="showInventory()" title="Mi Inventario">🎒</span>
                     <span onclick="showMembersPanel()" title="Ver miembros">👥</span>
                     <span onclick="showGroupOptions()" title="Opciones">⚙️</span>
                 </div>
@@ -54,6 +74,7 @@
                         <div class="input-actions">
                             <span onclick="prepareLocationShare()" title="Compartir ubicación" class="action-icon">📍</span>
                             <span onclick="prepareFileUpload()" title="Subir archivo" class="action-icon">📎</span>
+                            <span id="encryption-toggle" onclick="toggleEncryption()" title="Encriptación desactivada" class="action-icon encryption-off">🔓</span>
                         </div>
                         <input type="text" placeholder="Selecciona un canal para comenzar..." disabled>
                         <button class="btn" disabled>Enviar</button>
@@ -65,81 +86,82 @@
 
     <!-- Vista del Torneo de Predicciones -->
     <div id="tournament-view" class="tournament-main-view d-none">
-        <main class="tournament-content">
+        <main class="tournament-content-wrapper">
             <header class="tournament-header">
-                <h2>🏆 Torneo de Predicciones - Jornada 1</h2>
-                <div class="header-icons">
-                    <span onclick="showTournamentInfo()" title="Información del torneo">ℹ️</span>
-                    <span onclick="showTournamentHistory()" title="Historial">📊</span>
+                <h2>🏆 Copa Mundial FIFA 2026</h2>
+                <div class="tournament-tabs">
+                    <button class="tab-btn active" onclick="showTournamentTab('predictions')">🔮 Predicciones</button>
+                    <button class="tab-btn" onclick="showTournamentTab('leaderboard')">🏅 Leaderboard</button>
+                    <button class="tab-btn" onclick="showTournamentTab('groups')">Fase de Grupos</button>
+                    <button class="tab-btn" onclick="showTournamentTab('knockout')">Eliminación Directa</button>
+                    <button class="tab-btn" onclick="showTournamentTab('standings')">Clasificación</button>
                 </div>
             </header>
-            <div class="predictions-container">
-                <div class="matches-column">
-                    <h3>Ingresa tus predicciones</h3>
-                    <div class="match-prediction-card">
-                        <div class="team-info">
-                            <img src="https://flagcdn.com/24x18/mx.png" alt="Bandera MX"> MÉXICO
-                        </div>
-                        <div class="score-inputs">
-                            <input type="number" class="score-input" min="0" max="99" id="score-mx">
-                            <span>-</span>
-                            <input type="number" class="score-input" min="0" max="99" id="score-us">
-                        </div>
-                        <div class="team-info right">
-                            <img src="https://flagcdn.com/24x18/us.png" alt="Bandera US"> EE.UU.
+
+            <div class="tournament-content">
+                <!-- Predicciones -->
+                <div id="tab-predictions" class="tab-content active">
+                    <div class="predictions-header">
+                        <h3>🔮 Predicciones de Jornada</h3>
+                        <div class="jornada-selector">
+                            <button class="btn-secondary" onclick="changePredictionJornada(-1)">← Anterior</button>
+                            <span id="current-jornada-name">Jornada 1 - Fase de Grupos</span>
+                            <button class="btn-secondary" onclick="changePredictionJornada(1)">Siguiente →</button>
                         </div>
                     </div>
-                    <div class="match-prediction-card">
-                        <div class="team-info">
-                            <img src="https://flagcdn.com/24x18/ca.png" alt="Bandera CA"> CANADÁ
-                        </div>
-                        <div class="score-inputs">
-                            <input type="number" class="score-input" min="0" max="99" id="score-ca">
-                            <span>-</span>
-                            <input type="number" class="score-input" min="0" max="99" id="score-de">
-                        </div>
-                        <div class="team-info right">
-                            <img src="https://flagcdn.com/24x18/de.png" alt="Bandera DE"> ALEMANIA
-                        </div>
+                    <div id="predictions-container">
+                        <p style="text-align: center; color: var(--text-muted); padding: 40px;">
+                            Cargando predicciones...
+                        </p>
                     </div>
-                    <div class="match-prediction-card">
-                        <div class="team-info">
-                            <img src="https://flagcdn.com/24x18/br.png" alt="Bandera BR"> BRASIL
-                        </div>
-                        <div class="score-inputs">
-                            <input type="number" class="score-input" min="0" max="99" id="score-br">
-                            <span>-</span>
-                            <input type="number" class="score-input" min="0" max="99" id="score-ar">
-                        </div>
-                        <div class="team-info right">
-                            <img src="https://flagcdn.com/24x18/ar.png" alt="Bandera AR"> ARGENTINA
-                        </div>
+                    <div class="predictions-actions" style="text-align: center; margin-top: 20px;">
+                        <button class="btn btn-primary" id="submit-predictions-btn" onclick="submitPredictions()">💾 Guardar Predicciones</button>
                     </div>
-                    <button class="tournament-btn" onclick="savePredictions()">Guardar Predicciones</button>
                 </div>
-                <div class="leaderboard-column">
-                    <h3>📊 Leaderboard de la Jornada</h3>
-                    <ul class="leaderboard-list" id="tournament-leaderboard">
-                        <li><span>🥇 1. JuanPerez</span> <span class="points">150 pts</span></li>
-                        <li><span>🥈 2. Admin</span> <span class="points">125 pts</span></li>
-                        <li><span>🥉 3. TuUsuario</span> <span class="points">110 pts</span></li>
-                        <li><span>4. Maria</span> <span class="points">90 pts</span></li>
-                    </ul>
-                    
-                    <div class="user-tournament-stats">
-                        <h4>Tus Estadísticas</h4>
-                        <div class="stat-item">
-                            <span>Predicciones correctas:</span>
-                            <span id="user-correct-predictions">0</span>
+
+                <!-- Leaderboard -->
+                <div id="tab-leaderboard" class="tab-content">
+                    <div class="leaderboard-header">
+                        <h3>🏅 Tabla de Clasificación</h3>
+                        <div class="leaderboard-selector">
+                            <button class="btn-secondary" onclick="changeLeaderboardJornada(-1)">← Anterior</button>
+                            <span id="current-leaderboard-jornada">Jornada 1</span>
+                            <button class="btn-secondary" onclick="changeLeaderboardJornada(1)">Siguiente →</button>
                         </div>
-                        <div class="stat-item">
-                            <span>Puntos totales:</span>
-                            <span id="user-total-points">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span>Posición:</span>
-                            <span id="user-position">-</span>
-                        </div>
+                    </div>
+                    <div id="leaderboard-container">
+                        <p style="text-align: center; color: var(--text-muted); padding: 40px;">
+                            Cargando leaderboard...
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Fase de Grupos -->
+                <div id="tab-groups" class="tab-content">
+                    <div class="groups-header-bar">
+                        <button class="restart-btn" id="restart-tournament-btn" onclick="restartTournament()">🔄 Reiniciar Torneo</button>
+                        <button class="simulate-all-btn" id="simulate-all-btn" onclick="simulateAllMatches()">⚡ Simular Fase de Grupos</button>
+                    </div>
+                    <div class="groups-grid" id="groups-container"></div>
+                </div>
+
+                <!-- Eliminación Directa -->
+                <div id="tab-knockout" class="tab-content">
+                    <div class="groups-header-bar">
+                        <button class="simulate-all-btn" id="simulate-knockout-btn" onclick="simulateAllKnockout()" style="display: none;">⚡ Simular Toda la Eliminación Directa</button>
+                    </div>
+                    <div class="knockout-stage" id="knockout-container">
+                        <p style="text-align: center; color: var(--text-muted); padding: 40px;">
+                            La fase de eliminación directa comenzará cuando termine la fase de grupos.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Clasificación -->
+                <div id="tab-standings" class="tab-content">
+                    <div class="standings-container" id="standings-container">
+                        <h3 style="color: var(--text-color); margin-bottom: 20px;">Clasificados a Octavos de Final</h3>
+                        <div id="qualified-teams"></div>
                     </div>
                 </div>
             </div>
@@ -165,14 +187,69 @@
             <h3>Opciones de llamada</h3>
             <div class="modal-actions" style="justify-content: center;">
                 <button class="btn btn-secondary" onclick="alert('Función de llamada - Próximamente')">Hacer Llamada</button>
-                <button class="btn btn-primary" onclick="alert('Función de videollamada - Próximamente')">Hacer Videollamada</button>
+                <button class="btn btn-primary" onclick="startVideoCall(); closeModal();">Hacer Videollamada</button>
             </div>
             <button id="cancel-call" class="btn btn-secondary" style="margin-top: 15px;" onclick="closeModal()">Cancelar</button>
         </div>
     </div>
 
+    <!-- Modal de Videollamada -->
+    <!-- Modal de Videollamada -->
+<div id="video-call-modal" class="video-call-modal" style="display: none;">
+    <div class="video-call-container">
+        <div class="video-call-header">
+            <h3 id="call-room-name">Videollamada</h3>
+            <button class="end-call-btn" onclick="endVideoCall()">🔴 Finalizar</button>
+        </div>
+        
+        <div id="videos-grid" class="videos-grid">
+            <!-- Video remoto -->
+            <div class="video-wrapper" id="remote-video-wrapper" style="display: none;">
+                <video id="remote-video" autoplay playsinline></video>
+                <div class="video-label" id="remote-user-name">Usuario</div>
+            </div>
+            
+            <!-- Video local -->
+            <div class="video-wrapper">
+                <video id="local-video" autoplay playsinline muted></video>
+                <div class="video-label">Tú</div>
+            </div>
+        </div>
+        
+        <div class="call-controls">
+            <button class="control-btn" id="toggle-mic" onclick="toggleMic()" title="Silenciar">🎤</button>
+            <button class="control-btn" id="toggle-camera" onclick="toggleCamera()" title="Cámara">📹</button>
+            <button class="control-btn" onclick="shareScreen()" title="Compartir pantalla">📺</button>
+        </div>
+    </div>
+</div>
+
+    <!-- Notificación de llamada entrante (SimplePeer) -->
+    <div id="incoming-call-modal" class="call-notification" style="display: none;">
+        <div class="call-notification-content">
+            <div class="call-icon">📞</div>
+            <div class="call-info">
+                <strong id="caller-name">Usuario</strong>
+                <p>te está llamando...</p>
+            </div>
+            <div class="call-actions">
+                <button class="btn-join-call" id="accept-call-btn">✅ Aceptar</button>
+                <button class="btn-dismiss-call" id="reject-call-btn">❌ Rechazar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Enlace al archivo JavaScript -->
-    <script src="../js/tasks.js"></script>
-    <script src="../js/app.js"></script>
+    <!-- Socket.IO para señalización en tiempo real -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <!-- SimplePeer para WebRTC simplificado -->
+    <script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"></script>
+    
+    <script src="js/tasks.js"></script>
+    <script src="js/predictions.js"></script>
+    <script src="js/tournament.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/videocall.js"></script>
 </body>
 </html>

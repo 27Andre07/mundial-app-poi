@@ -74,32 +74,56 @@ function renderTasksList(tasks) {
         return `<div style="text-align: center; padding: 40px; color: #b9bbbe;"><p>No hay tareas en este grupo. ¡Crea una para empezar!</p></div>`;
     }
 
-    return tasks.map(task => `
-        <div class="task-item" style="border: 1px solid #40444b; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: ${task.status === 'completed' ? '#2f4b26' : '#40444b'};">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div>
-                    <h4 style="margin: 0; ${task.status === 'completed' ? 'text-decoration: line-through;' : ''}">${task.title}</h4>
-                    <p style="margin: 5px 0; color: #b9bbbe; font-size: 14px;">${task.description || ''}</p>
-                    <div style="font-size: 12px; color: #72767d; margin-top: 10px;">
-                        <span>📅 Límite: ${new Date(task.due_date).toLocaleDateString()}</span> | 
-                        <span>👤 Asignada a: ${task.assigned_to_username || 'Nadie'}</span> |
-                        <span style="color: ${getStatusColor(task.status)}; font-weight: bold;">● ${task.status}</span>
+    return tasks.map(task => {
+        // Solo el creador de la tarea puede completarla/reabrirla, editarla y eliminarla
+        const isCreator = task.assigned_by == currentUser.id;
+        
+        const completeButton = isCreator 
+            ? `<button class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="changeTaskStatus('${task.id}', '${task.status === 'completed' ? 'pending' : 'completed'}')">${task.status === 'completed' ? '↶ Reabrir' : '✓ Completar'}</button>`
+            : '';
+        
+        const editButton = isCreator
+            ? `<button class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="showEditTaskForm('${task.id}')">✏️ Editar</button>`
+            : '';
+            
+        const deleteButton = isCreator
+            ? `<button class="btn" style="padding: 5px 10px; font-size: 12px; background: #f04747;" onclick="deleteTask('${task.id}')">🗑️ Eliminar</button>`
+            : '';
+        
+        return `
+            <div class="task-item" style="border: 1px solid #40444b; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: ${task.status === 'completed' ? '#2f4b26' : '#40444b'};">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h4 style="margin: 0; ${task.status === 'completed' ? 'text-decoration: line-through;' : ''}">${task.title}</h4>
+                        <p style="margin: 5px 0; color: #b9bbbe; font-size: 14px;">${task.description || ''}</p>
+                        <div style="font-size: 12px; color: #72767d; margin-top: 10px;">
+                            <span>📅 Límite: ${new Date(task.due_date).toLocaleDateString()}</span> | 
+                            <span>👤 Asignada a: ${task.assigned_to_username || 'Nadie'}</span> |
+                            <span>👨‍💼 Creada por: ${task.created_by_username || 'Desconocido'}</span> |
+                            <span style="color: ${getStatusColor(task.status)}; font-weight: bold;">● ${task.status}</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        ${completeButton}
+                        ${editButton}
+                        ${deleteButton}
                     </div>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="changeTaskStatus('${task.id}', '${task.status === 'completed' ? 'pending' : 'completed'}')">${task.status === 'completed' ? '↶ Reabrir' : '✓ Completar'}</button>
-                    <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="showEditTaskForm('${task.id}')">✏️ Editar</button>
-                    <button class="btn" style="padding: 5px 10px; font-size: 12px; background: #f04747;" onclick="deleteTask('${task.id}')">🗑️ Eliminar</button>
-                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 
 // Muestra el formulario para crear una tarea
 function showCreateTaskForm() {
     closeModal(); // Cierra el modal de la lista
+    
+    // Obtener la fecha de mañana (siguiente día)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const minDate = tomorrow.toISOString().split('T')[0];
+    
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.id = 'create-task-modal';
@@ -110,9 +134,9 @@ function showCreateTaskForm() {
             <textarea id="taskDescription" placeholder="Descripción..." style="width: 95%; padding: 10px; margin-bottom: 10px; min-height: 80px;"></textarea>
             <select id="taskAssignTo" style="width: 100%; padding: 10px; margin-bottom: 10px;">
                 <option value="">Asignar a...</option>
-                ${currentGroupMembers.map(member => `<option value="${member.id}">${member.username}</option>`).join('')}
+                ${currentGroupMembers.filter(member => member.id !== currentUser.id).map(member => `<option value="${member.id}">${member.username}</option>`).join('')}
             </select>
-            <input type="date" id="taskDueDate" style="width: 95%; padding: 10px; margin-bottom: 10px;">
+            <input type="date" id="taskDueDate" min="${minDate}" style="width: 95%; padding: 10px; margin-bottom: 10px;">
             <select id="taskPriority" style="width: 100%; padding: 10px; margin-bottom: 10px;">
                 <option value="low">Baja</option>
                 <option value="medium" selected>Media</option>
@@ -143,6 +167,16 @@ async function createTask() {
         showNotification('El título y la fecha límite son obligatorios', 'error');
         return;
     }
+    
+    // Validar que la fecha sea futura
+    const selectedDate = new Date(taskData.dueDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (selectedDate <= today) {
+        showNotification('La fecha límite debe ser posterior a hoy', 'error');
+        return;
+    }
 
     const response = await fetch(`${API_BASE}tasks.php`, {
         method: 'POST',
@@ -166,6 +200,11 @@ async function showEditTaskForm(taskId) {
     const task = tasks.find(t => t.id == taskId);
     if (!task) return;
 
+    // Obtener la fecha de mañana (siguiente día)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const minDate = tomorrow.toISOString().split('T')[0];
+
     closeModal();
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -180,7 +219,7 @@ async function showEditTaskForm(taskId) {
                 <option value="">Asignar a...</option>
                 ${currentGroupMembers.map(member => `<option value="${member.id}" ${task.assigned_to == member.id ? 'selected' : ''}>${member.username}</option>`).join('')}
             </select>
-            <input type="date" id="editTaskDueDate" value="${task.due_date}" style="width: 95%; padding: 10px; margin-bottom: 10px;">
+            <input type="date" id="editTaskDueDate" value="${task.due_date}" min="${minDate}" style="width: 95%; padding: 10px; margin-bottom: 10px;">
             <select id="editTaskPriority" style="width: 100%; padding: 10px; margin-bottom: 10px;">
                 <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Baja</option>
                 <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Media</option>
@@ -234,7 +273,11 @@ async function changeTaskStatus(taskId, status) {
     const result = await response.json();
 
     if (result.success) {
-        showNotification('Estado de la tarea actualizado', 'success');
+        let message = 'Estado de la tarea actualizado';
+        if (result.points_awarded && result.points_awarded > 0) {
+            message += ` - Se otorgaron ${result.points_awarded} puntos al usuario asignado 🎉`;
+        }
+        showNotification(message, 'success');
         // Refrescar solo la lista de tareas sin cerrar el modal
         const tasks = await getGroupTasks(currentGroup.id);
         document.getElementById('tasksContainer').innerHTML = renderTasksList(tasks);

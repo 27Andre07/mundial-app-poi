@@ -123,5 +123,3 @@ function inviteMember($conn, $data, $user_id) {
         echo json_encode(['success' => false, 'error' => 'Este usuario ya es miembro del grupo.']);
     }
 }
-
-?>

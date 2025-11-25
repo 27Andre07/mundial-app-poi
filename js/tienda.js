@@ -1,35 +1,55 @@
 const API_BASE = 'api/';
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Cargar datos del usuario y sus puntos
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (!currentUser) {
-        // Si no hay usuario, redirigir al login
-        window.location.href = 'login.html';
-        return;
+document.addEventListener('DOMContentLoaded', async () => {
+    // Verificar autenticación y cargar puntos desde el servidor
+    await checkAuthAndLoadPoints();
+
+    // Función para verificar autenticación y cargar puntos desde la BD
+    async function checkAuthAndLoadPoints() {
+        try {
+            const response = await fetch(API_BASE + 'auth.php?action=check', {
+                credentials: 'include'
+            });
+            const data = await response.json();
+            
+            if (!data.authenticated) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Mostrar los puntos del usuario desde la base de datos
+            document.getElementById('user-points-display').textContent = data.user.points || 0;
+            
+            // Guardar usuario actual
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
+            
+        } catch (error) {
+            console.error('Error verificando autenticación:', error);
+            window.location.href = 'login.html';
+        }
     }
 
-    // Función para calcular y mostrar los puntos
-    function updateUserPoints() {
-        const rewards = JSON.parse(localStorage.getItem('rewards') || '[]');
-        const purchases = JSON.parse(localStorage.getItem('purchases') || '[]');
-
-        const totalPointsEarned = rewards
-            .filter(r => r.userId === currentUser.id)
-            .reduce((sum, r) => sum + r.points, 0);
-
-        const totalPointsSpent = purchases
-            .filter(p => p.userId === currentUser.id)
-            .reduce((sum, p) => sum + p.price, 0);
-
-        const currentPoints = totalPointsEarned - totalPointsSpent;
-        
-        document.getElementById('user-points-display').textContent = currentPoints;
-        return currentPoints;
+    // Función para actualizar los puntos del usuario desde el servidor
+    async function updateUserPoints() {
+        try {
+            const response = await fetch(API_BASE + 'auth.php?action=check', {
+                credentials: 'include'
+            });
+            const data = await response.json();
+            
+            if (data.authenticated) {
+                const currentPoints = data.user.points || 0;
+                document.getElementById('user-points-display').textContent = currentPoints;
+                return currentPoints;
+            }
+        } catch (error) {
+            console.error('Error actualizando puntos:', error);
+        }
+        return 0;
     }
 
     // Función para manejar la compra de un artículo
-    function handlePurchase(event) {
+    async function handlePurchase(event) {
         const buyButton = event.target;
         if (!buyButton.classList.contains('buy-btn')) return;
 
@@ -38,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const price = parseInt(shopItem.dataset.price, 10);
         const itemName = shopItem.querySelector('h3').textContent;
         
-        const currentPoints = updateUserPoints();
+        const currentPoints = await updateUserPoints();
 
         if (currentPoints < price) {
             alert('¡No tienes suficientes puntos para comprar este artículo!');
@@ -46,49 +66,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (confirm(`¿Estás seguro de que quieres comprar "${itemName}" por ${price} puntos?`)) {
-            // Registrar la compra
-            const purchases = JSON.parse(localStorage.getItem('purchases') || '[]');
-            const newPurchase = {
-                purchaseId: 'purchase_' + Date.now(),
-                userId: currentUser.id,
-                itemId: itemId,
-                itemName: itemName,
-                price: price,
-                purchasedAt: new Date().toISOString()
-            };
-            purchases.push(newPurchase);
-            localStorage.setItem('purchases', JSON.stringify(purchases));
-
-            // Agregar al inventario del usuario
-            const inventory = JSON.parse(localStorage.getItem('userInventory') || '[]');
-            inventory.push(newPurchase);
-            localStorage.setItem('userInventory', JSON.stringify(inventory));
-
-            // Actualizar puntos y mostrar confirmación
-            updateUserPoints();
-            alert(`¡Felicidades! Has comprado "${itemName}".`);
-            checkInventory(); // Actualizar estado de los botones
+            try {
+                const response = await fetch(API_BASE + 'shop.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        action: 'purchase',
+                        item_id: itemId,
+                        item_name: itemName,
+                        price: price
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`¡Felicidades! Has comprado "${itemName}".`);
+                    document.getElementById('user-points-display').textContent = data.new_points;
+                    buyButton.textContent = 'Comprado ✓';
+                    buyButton.disabled = true;
+                    buyButton.style.backgroundColor = '#4caf50';
+                } else {
+                    alert(data.error || 'Error al realizar la compra');
+                }
+            } catch (error) {
+                console.error('Error comprando artículo:', error);
+                alert('Error al procesar la compra');
+            }
         }
     }
 
     // Función para revisar el inventario y deshabilitar botones de artículos ya comprados
-    function checkInventory() {
-        const inventory = JSON.parse(localStorage.getItem('userInventory') || '[]');
-        const purchasedItemIds = inventory.map(item => item.itemId);
-
-        document.querySelectorAll('.shop-item').forEach(item => {
-            const itemId = item.dataset.itemId;
-            const buyButton = item.querySelector('.buy-btn');
+    async function checkInventory() {
+        try {
+            const response = await fetch(API_BASE + 'shop.php?action=purchases', {
+                credentials: 'include'
+            });
+            const data = await response.json();
             
-            if (purchasedItemIds.includes(itemId)) {
-                buyButton.textContent = 'Adquirido';
-                buyButton.disabled = true;
+            if (data.success) {
+                const purchases = data.purchases;
+                purchases.forEach(purchase => {
+                    const shopItem = document.querySelector(`[data-item-id="${purchase.item_id}"]`);
+                    if (shopItem) {
+                        const buyButton = shopItem.querySelector('.buy-btn');
+                        buyButton.textContent = 'Comprado ✓';
+                        buyButton.disabled = true;
+                        buyButton.style.backgroundColor = '#4caf50';
+                    }
+                });
             }
-        });
+        } catch (error) {
+            console.error('Error cargando inventario:', error);
+        }
     }
 
     // Inicialización
-    updateUserPoints();
     checkInventory();
     
     // Añadir el listener de clics a la cuadrícula de la tienda

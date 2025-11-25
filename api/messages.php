@@ -37,9 +37,12 @@ function getMessages($conn, $user_id) {
     }
 
     $sql = "
-        SELECT m.id, m.content, m.file_name, m.file_type, 
-               TO_BASE64(m.file_data) as file_data, 
-               u.id as user_id, u.username, m.created_at
+        SELECT m.id, m.content, m.file_url, m.file_name, m.file_type, m.latitude, m.longitude,
+               u.id as user_id, u.username, m.created_at,
+               (SELECT COUNT(*) FROM shop_purchases sp 
+                WHERE sp.user_id = u.id 
+                AND sp.item_id = 'insignia_bota' 
+                AND sp.is_active = TRUE) as has_badge
         FROM messages m
         JOIN users u ON m.user_id = u.id
         WHERE m.channel_id = ?
@@ -69,9 +72,16 @@ function getMessages($conn, $user_id) {
 function sendMessage($conn, $data, $user_id) {
     $channel_id = $data['channel_id'] ?? 0;
     $content = $data['content'] ?? '';
+    $latitude = $data['latitude'] ?? null;
+    $longitude = $data['longitude'] ?? null;
 
-    $stmt = $conn->prepare("INSERT INTO messages (channel_id, user_id, content) VALUES (?, ?, ?)");
-    $stmt->bind_param("iis", $channel_id, $user_id, $content);
+    if ($latitude !== null && $longitude !== null) {
+        $stmt = $conn->prepare("INSERT INTO messages (channel_id, user_id, content, latitude, longitude) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("iisdd", $channel_id, $user_id, $content, $latitude, $longitude);
+    } else {
+        $stmt = $conn->prepare("INSERT INTO messages (channel_id, user_id, content) VALUES (?, ?, ?)");
+        $stmt->bind_param("iis", $channel_id, $user_id, $content);
+    }
 
     if ($stmt->execute()) {
         echo json_encode(['success' => true]);
@@ -88,24 +98,40 @@ function uploadFile($conn, $user_id) {
     }
 
     $file = $_FILES['file'];
-    $file_name = sanitize($file['name']);
+    $file_name = basename($file['name']);
     $file_type = $file['type'];
-    $file_data = file_get_contents($file['tmp_name']);
-    $content = "Subió un archivo: " . $file_name;
+    $file_tmp = $file['tmp_name'];
+    
+    // Crear directorio uploads si no existe
+    $upload_dir = '../uploads/';
+    if (!file_exists($upload_dir)) {
+        mkdir($upload_dir, 0777, true);
+    }
+    
+    // Generar nombre único para el archivo
+    $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+    $unique_name = uniqid() . '_' . time() . '.' . $file_extension;
+    $file_path = $upload_dir . $unique_name;
+    
+    // Mover archivo a la carpeta uploads
+    if (!move_uploaded_file($file_tmp, $file_path)) {
+        echo json_encode(['success' => false, 'error' => 'Error al guardar el archivo']);
+        return;
+    }
+    
+    $file_url = 'uploads/' . $unique_name;
+    $content = $_POST['content'] ?? "Subió un archivo: " . $file_name;
 
     $stmt = $conn->prepare(
-        "INSERT INTO messages (channel_id, user_id, content, file_name, file_type, file_data) 
+        "INSERT INTO messages (channel_id, user_id, content, file_url, file_name, file_type) 
          VALUES (?, ?, ?, ?, ?, ?)"
     );
 
-    $null = NULL;
-    $stmt->bind_param("iisssb", $channel_id, $user_id, $content, $file_name, $file_type, $null);
-    $stmt->send_long_data(5, $file_data);
+    $stmt->bind_param("iissss", $channel_id, $user_id, $content, $file_url, $file_name, $file_type);
 
     if ($stmt->execute()) {
-        echo json_encode(['success' => true]);
+        echo json_encode(['success' => true, 'file_url' => $file_url]);
     } else {
         echo json_encode(['success' => false, 'error' => 'Error al guardar el archivo en la BD: ' . $stmt->error]);
     }
 }
-?>

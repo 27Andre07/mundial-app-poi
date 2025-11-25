@@ -17,6 +17,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function checkAuthentication() {
+    // No verificar autenticación si venimos de un logout
+    const justLoggedOut = sessionStorage.getItem('justLoggedOut');
+    if (justLoggedOut) {
+        sessionStorage.removeItem('justLoggedOut');
+        return;
+    }
+    
     try {
         const response = await fetch(API_BASE + 'auth.php?action=check', {
             credentials: 'include' // Importante para enviar cookies de sesión

@@ -85,10 +85,30 @@ function login($conn, $data) {
 function checkAuth($conn) {
     if (isset($_SESSION['user_id'])) {
         $user_id = $_SESSION['user_id'];
-        $stmt = $conn->prepare("UPDATE users SET last_seen = NOW(), is_online = TRUE WHERE id = ?");
+        
+        // Actualizar última actividad y obtener puntos del usuario
+        $stmt = $conn->prepare("SELECT points FROM users WHERE id = ?");
         $stmt->bind_param("i", $user_id);
         $stmt->execute();
-        echo json_encode(['authenticated' => true, 'user' => ['id' => $_SESSION['user_id'], 'username' => $_SESSION['username'], 'email' => $_SESSION['email']]]);
+        $result = $stmt->get_result();
+        $user_data = $result->fetch_assoc();
+        $stmt->close();
+        
+        // Actualizar estado en línea
+        $update_stmt = $conn->prepare("UPDATE users SET last_seen = NOW(), is_online = TRUE WHERE id = ?");
+        $update_stmt->bind_param("i", $user_id);
+        $update_stmt->execute();
+        $update_stmt->close();
+        
+        echo json_encode([
+            'authenticated' => true, 
+            'user' => [
+                'id' => $_SESSION['user_id'], 
+                'username' => $_SESSION['username'], 
+                'email' => $_SESSION['email'],
+                'points' => $user_data['points'] ?? 0
+            ]
+        ]);
     } else {
         echo json_encode(['authenticated' => false]);
     }
@@ -100,8 +120,26 @@ function logout($conn) {
         $stmt = $conn->prepare("UPDATE users SET is_online = FALSE WHERE id = ?");
         $stmt->bind_param("i", $user_id);
         $stmt->execute();
+        $stmt->close();
     }
+    
+    // Limpiar todas las variables de sesión
+    $_SESSION = array();
+    
+    // Destruir la cookie de sesión si existe
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
+    }
+    
+    // Destruir la sesión
     session_destroy();
-    echo json_encode(['success' => true]);
+    
+    // Iniciar una nueva sesión limpia para enviar la respuesta
+    session_start();
+    
+    echo json_encode(['success' => true, 'message' => 'Sesión cerrada']);
 }
-?>
