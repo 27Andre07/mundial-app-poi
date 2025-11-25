@@ -9,8 +9,8 @@ window.tournamentData = {
     knockoutStage: {}
 };
 
-// GRUPOS FIJOS DEL MUNDIAL 2026 (permanentes)
-const worldCupTeams = {
+// Variable global para almacenar los equipos cargados desde la BD
+let worldCupTeams = {
     'A': [
         { name: 'México', code: 'mx', flag: '🇲🇽' },
         { name: 'Uruguay', code: 'uy', flag: '🇺🇾' },
@@ -46,67 +46,169 @@ const worldCupTeams = {
         { name: 'Bélgica', code: 'be', flag: '🇧🇪' },
         { name: 'Senegal', code: 'sn', flag: '🇸🇳' },
         { name: 'Egipto', code: 'eg', flag: '🇪🇬' }
+    ],
+    'G': [
+        { name: 'Colombia', code: 'co', flag: '🇨🇴' },
+        { name: 'Croacia', code: 'hr', flag: '🇭🇷' },
+        { name: 'Dinamarca', code: 'dk', flag: '🇩🇰' },
+        { name: 'Gales', code: 'gb-wls', flag: '🏴󠁧󠁢󠁷󠁬󠁳󠁿' }
+    ],
+    'H': [
+        { name: 'Suiza', code: 'ch', flag: '🇨🇭' },
+        { name: 'Polonia', code: 'pl', flag: '🇵🇱' },
+        { name: 'Corea del Sur', code: 'kr', flag: '🇰🇷' },
+        { name: 'Túnez', code: 'tn', flag: '🇹🇳' }
+    ],
+    'I': [
+        { name: 'Serbia', code: 'rs', flag: '🇷🇸' },
+        { name: 'Camerún', code: 'cm', flag: '🇨🇲' },
+        { name: 'Irán', code: 'ir', flag: '🇮🇷' },
+        { name: 'Honduras', code: 'hn', flag: '🇭🇳' }
+    ],
+    'J': [
+        { name: 'Arabia Saudita', code: 'sa', flag: '🇸🇦' },
+        { name: 'Panamá', code: 'pa', flag: '🇵🇦' },
+        { name: 'Argelia', code: 'dz', flag: '🇩🇿' },
+        { name: 'Perú', code: 'pe', flag: '🇵🇪' }
+    ],
+    'K': [
+        { name: 'Suecia', code: 'se', flag: '🇸🇪' },
+        { name: 'Catar', code: 'qa', flag: '🇶🇦' },
+        { name: 'Mali', code: 'ml', flag: '🇲🇱' },
+        { name: 'Chile', code: 'cl', flag: '🇨🇱' }
+    ],
+    'L': [
+        { name: 'Ucrania', code: 'ua', flag: '🇺🇦' },
+        { name: 'Nueva Zelanda', code: 'nz', flag: '🇳🇿' },
+        { name: 'Costa de Marfil', code: 'ci', flag: '🇨🇮' },
+        { name: 'Islandia', code: 'is', flag: '🇮🇸' }
     ]
 };
 
-// Lista de todas las 48 selecciones (para referencia, pero no se usa para generar grupos)
-const allTeams = [
-    { name: 'México', code: 'mx', flag: '🇲🇽' },
-    { name: 'Uruguay', code: 'uy', flag: '🇺🇾' },
-    { name: 'Jamaica', code: 'jm', flag: '🇯🇲' },
-    { name: 'Marruecos', code: 'ma', flag: '🇲🇦' },
-    { name: 'Estados Unidos', code: 'us', flag: '🇺🇸' },
-    { name: 'Colombia', code: 'co', flag: '🇨🇴' },
-    { name: 'Japón', code: 'jp', flag: '🇯🇵' },
-    { name: 'Gales', code: 'gb-wls', flag: '🏴󠁧󠁢󠁷󠁬󠁳󠁿' },
-    { name: 'Canadá', code: 'ca', flag: '🇨🇦' },
-    { name: 'Ecuador', code: 'ec', flag: '🇪🇨' },
-    { name: 'Corea del Sur', code: 'kr', flag: '🇰🇷' },
-    { name: 'Senegal', code: 'sn', flag: '🇸🇳' },
-    { name: 'Argentina', code: 'ar', flag: '🇦🇷' },
-    { name: 'Países Bajos', code: 'nl', flag: '🇳🇱' },
-    { name: 'Australia', code: 'au', flag: '🇦🇺' },
-    { name: 'Túnez', code: 'tn', flag: '🇹🇳' },
-    { name: 'Brasil', code: 'br', flag: '🇧🇷' },
-    { name: 'Suiza', code: 'ch', flag: '🇨🇭' },
-    { name: 'Serbia', code: 'rs', flag: '🇷🇸' },
-    { name: 'Camerún', code: 'cm', flag: '🇨🇲' },
-    { name: 'Alemania', code: 'de', flag: '🇩🇪' },
-    { name: 'Croacia', code: 'hr', flag: '🇭🇷' },
-    { name: 'Nigeria', code: 'ng', flag: '🇳🇬' },
-    { name: 'España', code: 'es', flag: '🇪🇸' },
-    { name: 'Polonia', code: 'pl', flag: '🇵🇱' },
-    { name: 'Costa Rica', code: 'cr', flag: '🇨🇷' },
-    { name: 'Ghana', code: 'gh', flag: '🇬🇭' },
-    { name: 'Inglaterra', code: 'gb-eng', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-    { name: 'Dinamarca', code: 'dk', flag: '🇩🇰' },
-    { name: 'Irán', code: 'ir', flag: '🇮🇷' },
-    { name: 'Egipto', code: 'eg', flag: '🇪🇬' },
-    { name: 'Francia', code: 'fr', flag: '🇫🇷' },
-    { name: 'Portugal', code: 'pt', flag: '🇵🇹' },
-    { name: 'Honduras', code: 'hn', flag: '🇭🇳' },
-    { name: 'Arabia Saudita', code: 'sa', flag: '🇸🇦' },
-    { name: 'Italia', code: 'it', flag: '🇮🇹' },
-    { name: 'Bélgica', code: 'be', flag: '🇧🇪' },
-    { name: 'Panamá', code: 'pa', flag: '🇵🇦' },
-    { name: 'Argelia', code: 'dz', flag: '🇩🇿' },
-    { name: 'Perú', code: 'pe', flag: '🇵🇪' },
-    { name: 'Suecia', code: 'se', flag: '🇸🇪' },
-    { name: 'Catar', code: 'qa', flag: '🇶🇦' },
-    { name: 'Mali', code: 'ml', flag: '🇲🇱' },
-    { name: 'Chile', code: 'cl', flag: '🇨🇱' },
-    { name: 'Ucrania', code: 'ua', flag: '🇺🇦' },
-    { name: 'Nueva Zelanda', code: 'nz', flag: '🇳🇿' },
-    { name: 'Costa de Marfil', code: 'ci', flag: '🇨🇮' },
-    { name: 'Islandia', code: 'is', flag: '🇮🇸' }
-];
+let allTeamsFromDB = [];
+
+// Función para convertir código de país a emoji de bandera
+function getFlagEmoji(countryCode) {
+    if (!countryCode) return '🏳️';
+    
+    // Códigos especiales
+    const specialFlags = {
+        'gb-eng': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+        'gb-wls': '🏴󠁧󠁢󠁷󠁬󠁳󠁿'
+    };
+    
+    if (specialFlags[countryCode]) {
+        return specialFlags[countryCode];
+    }
+    
+    // Convertir código ISO a emoji de bandera
+    const codePoints = countryCode
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt());
+    return String.fromCodePoint(...codePoints);
+}
+
+// Cargar todas las selecciones desde la base de datos
+async function loadTeamsFromDB() {
+    try {
+        const response = await fetch('http://localhost:8081/api/teams.php', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error al cargar equipos desde la base de datos');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.teams) {
+            allTeamsFromDB = data.teams;
+            
+            // Agregar banderas generadas dinámicamente
+            allTeamsFromDB = allTeamsFromDB.map(team => ({
+                ...team,
+                flag: getFlagEmoji(team.code)
+            }));
+            
+            console.log('✅ Equipos cargados desde la BD:', allTeamsFromDB.length, 'selecciones');
+            
+            // Actualizar los equipos en los grupos fijos con los datos de la BD
+            updateGroupsWithDBTeams();
+            return true;
+        } else {
+            throw new Error('Formato de respuesta inválido');
+        }
+    } catch (error) {
+        console.error('Error al cargar equipos:', error);
+        alert('No se pudieron cargar los equipos del torneo. Se usarán los equipos por defecto.');
+        return false;
+    }
+}
+
+// Actualizar grupos fijos con datos de la BD
+function updateGroupsWithDBTeams() {
+    Object.keys(worldCupTeams).forEach(groupName => {
+        worldCupTeams[groupName] = worldCupTeams[groupName].map(team => {
+            const dbTeam = allTeamsFromDB.find(t => t.name === team.name);
+            if (dbTeam) {
+                return {
+                    id: dbTeam.id,
+                    name: dbTeam.name,
+                    code: dbTeam.code,
+                    flag: dbTeam.flag
+                };
+            }
+            return team;
+        });
+    });
+    console.log('✅ Grupos actualizados con datos de la BD');
+}
+
+// Generar grupos aleatorios con las 48 selecciones de la BD
+function generateRandomGroups() {
+    if (!allTeamsFromDB || allTeamsFromDB.length !== 48) {
+        console.error('No hay 48 equipos cargados desde la BD');
+        return false;
+    }
+
+    // Mezclar equipos aleatoriamente
+    const shuffledTeams = [...allTeamsFromDB].sort(() => Math.random() - 0.5);
+    
+    // Asegurar que todos los equipos tengan banderas
+    const teamsWithFlags = shuffledTeams.map(team => ({
+        ...team,
+        flag: team.flag || getFlagEmoji(team.code)
+    }));
+    
+    // Crear 12 grupos de 4 equipos cada uno
+    const groupNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+    worldCupTeams = {};
+    
+    groupNames.forEach((groupName, index) => {
+        const startIndex = index * 4;
+        worldCupTeams[groupName] = teamsWithFlags.slice(startIndex, startIndex + 4);
+    });
+    
+    console.log('✅ Grupos aleatorios generados:', worldCupTeams);
+    return true;
+}
 
 // Variable global para grupos aleatorios
-// Inicializar torneo (usa grupos fijos, no genera aleatorios)
-window.initTournament = function() {
-    console.log('Inicializando torneo con grupos fijos...');
+// Inicializar torneo (usa grupos desde la BD)
+window.initTournament = async function() {
+    console.log('Inicializando torneo...');
     
-    // Generar partidos usando los grupos fijos
+    // Cargar equipos desde la base de datos
+    const teamsLoaded = await loadTeamsFromDB();
+    
+    if (!teamsLoaded) {
+        console.error('No se pudieron cargar los equipos');
+        return;
+    }
+    
+    // Generar partidos usando los grupos cargados
     generateGroupMatches();
     console.log('Partidos generados:', window.tournamentData.matches);
     renderGroups();
@@ -159,8 +261,8 @@ function generateGroupMatches() {
         }));
     });
     
-    // Sincronizar partidos con BD
-    syncMatchesToDB(allMatches);
+    // Sincronizar partidos con BD (opcional - comentado para evitar errores)
+    // syncMatchesToDB(allMatches);
 }
 
 // Renderizar grupos
@@ -500,10 +602,10 @@ window.simulateAllMatches = function() {
         });
     });
     
-    // Enviar resultados al servidor
-    if (simulatedMatches.length > 0) {
-        saveSimulationResults(simulatedMatches);
-    }
+    // Enviar resultados al servidor (opcional - comentado para evitar errores si no existe la tabla)
+    // if (simulatedMatches.length > 0) {
+    //     saveSimulationResults(simulatedMatches);
+    // }
     
     // Ordenar todas las tablas
     Object.keys(window.tournamentData.standings).forEach(groupName => {
@@ -706,13 +808,13 @@ window.simulateKnockoutMatch = function(roundName, matchIdx) {
     
     match.played = true;
     
-    // Guardar resultado en BD
-    saveSimulationResults([{
-        home: match.team1.name,
-        away: match.team2.name,
-        score1: match.score1,
-        score2: match.score2
-    }]);
+    // Guardar resultado en BD (opcional - comentado)
+    // saveSimulationResults([{
+    //     home: match.team1.name,
+    //     away: match.team2.name,
+    //     score1: match.score1,
+    //     score2: match.score2
+    // }]);
     
     renderKnockoutStage();
 }
@@ -999,7 +1101,7 @@ window.simulateAllKnockout = function() {
 // Reiniciar todo el torneo
 window.restartTournament = async function() {
     // Confirmar con el usuario
-    if (!confirm('¿Estás seguro de que quieres reiniciar el torneo completo? Se perderán todos los resultados y predicciones.')) {
+    if (!confirm('¿Estás seguro de que quieres reiniciar el torneo completo? Se generarán nuevos grupos aleatorios.')) {
         return;
     }
     
@@ -1022,35 +1124,23 @@ window.restartTournament = async function() {
         console.error('Error reiniciando predicciones:', error);
     }
     
-    // Resetear solo los resultados, no los grupos
-    Object.keys(window.tournamentData.matches).forEach(groupName => {
-        window.tournamentData.matches[groupName].forEach(match => {
-            match.score1 = null;
-            match.score2 = null;
-            match.played = false;
-        });
-    });
+    // Generar nuevos grupos aleatorios
+    const groupsGenerated = generateRandomGroups();
+    if (!groupsGenerated) {
+        showNotification('Error al generar grupos aleatorios', 'error');
+        return;
+    }
     
-    // Resetear standings
-    Object.keys(worldCupTeams).forEach(groupName => {
-        window.tournamentData.standings[groupName] = worldCupTeams[groupName].map(team => ({
-            ...team,
-            played: 0,
-            won: 0,
-            drawn: 0,
-            lost: 0,
-            goalsFor: 0,
-            goalsAgainst: 0,
-            goalDifference: 0,
-            points: 0
-        }));
-    });
-    
-    // Resetear eliminatorias
+    // Reinicializar torneo con nuevos grupos
+    window.tournamentData.matches = {};
+    window.tournamentData.standings = {};
     window.tournamentData.qualified = [];
     window.tournamentData.knockoutStage = {};
     
-    // Renderizar de nuevo (mantiene grupos)
+    // Generar partidos y tablas con los nuevos grupos
+    generateGroupMatches();
+    
+    // Renderizar de nuevo con grupos aleatorios
     renderGroups();
     
     // Resetear botones
@@ -1083,9 +1173,9 @@ window.restartTournament = async function() {
         qualifiedContainer.innerHTML = '';
     }
     
-    showNotification('✅ Torneo reiniciado. Los grupos se mantienen, resultados borrados.', 'success');
+    showNotification('✅ Torneo reiniciado con nuevos grupos aleatorios.', 'success');
     
-    console.log('Torneo reiniciado - Grupos fijos mantenidos');
+    console.log('Torneo reiniciado - Nuevos grupos aleatorios generados');
 }
 
 // =============================================
