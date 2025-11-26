@@ -9,6 +9,11 @@ window.tournamentData = {
     knockoutStage: {}
 };
 
+// Variables para el sistema de apuestas de torneo
+let tournamentPoints = 0;
+let availableTeams = [];
+let userBets = [];
+
 // Variable global para almacenar los equipos cargados desde la BD
 let worldCupTeams = {
     'A': [
@@ -112,7 +117,7 @@ function getFlagEmoji(countryCode) {
 // Cargar todas las selecciones desde la base de datos
 async function loadTeamsFromDB() {
     try {
-        const response = await fetch('http://localhost:8081/api/teams.php', {
+        const response = await fetch('api/teams.php', {
             method: 'GET',
             credentials: 'include'
         });
@@ -550,6 +555,11 @@ window.showTournamentTab = function(tabName) {
     // Actualizar contenido
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
     document.getElementById(`tab-${tabName}`).classList.add('active');
+    
+    // Cargar datos específicos de la pestaña
+    if (tabName === 'exchange') {
+        window.loadExchangeBalances();
+    }
 }
 
 // Simular todos los partidos de todos los grupos
@@ -882,7 +892,7 @@ window.advanceToNextRound = function(currentRound) {
 }
 
 // Simular final
-window.simulateFinal = function() {
+window.simulateFinal = async function() {
     const match = window.tournamentData.knockoutStage.final;
     if (!match || match.played) return;
     
@@ -909,14 +919,25 @@ window.simulateFinal = function() {
     
     // Establecer campeón
     const winner = match.winner === match.team1.name ? match.team1 : match.team2;
+    const runnerUp = match.winner === match.team1.name ? match.team2 : match.team1;
     window.tournamentData.knockoutStage.winner = winner;
+    
+    // Registrar fase alcanzada
+    if (!window.tournamentData.teamPhases) {
+        window.tournamentData.teamPhases = {};
+    }
+    window.tournamentData.teamPhases[winner.name] = 'champion';
+    window.tournamentData.teamPhases[runnerUp.name] = 'final';
     
     showNotification(`¡${winner.name} es CAMPEÓN DEL MUNDO! 🏆`, 'success');
     renderKnockoutStage();
+    
+    // Resolver apuestas automáticamente
+    await resolveAllTournamentBets(winner.name);
 }
 
 // Simular toda la fase de eliminación directa
-window.simulateAllKnockout = function() {
+window.simulateAllKnockout = async function() {
     const btn = document.getElementById('simulate-knockout-btn');
     const stage = window.tournamentData.knockoutStage;
     
@@ -936,6 +957,11 @@ window.simulateAllKnockout = function() {
         btn.innerHTML = '⏳ Simulando...';
     }
     
+    // Inicializar objeto de seguimiento de fases
+    if (!window.tournamentData.teamPhases) {
+        window.tournamentData.teamPhases = {};
+    }
+    
     // Simular 16avos
     stage.roundOf32.forEach((match, idx) => {
         if (!match.played) {
@@ -952,6 +978,10 @@ window.simulateAllKnockout = function() {
                 match.winner = match.score1 > match.score2 ? match.team1.name : match.team2.name;
             }
             match.played = true;
+            
+            // Registrar equipo eliminado en 16avos
+            const loser = match.winner === match.team1.name ? match.team2.name : match.team1.name;
+            window.tournamentData.teamPhases[loser] = 'roundOf32';
         }
     });
     
@@ -986,6 +1016,10 @@ window.simulateAllKnockout = function() {
             match.winner = match.score1 > match.score2 ? match.team1.name : match.team2.name;
         }
         match.played = true;
+        
+        // Registrar equipo eliminado en octavos
+        const loser = match.winner === match.team1.name ? match.team2.name : match.team1.name;
+        window.tournamentData.teamPhases[loser] = 'roundOf16';
     });
     
     // Avanzar a cuartos
@@ -1019,6 +1053,10 @@ window.simulateAllKnockout = function() {
             match.winner = match.score1 > match.score2 ? match.team1.name : match.team2.name;
         }
         match.played = true;
+        
+        // Registrar equipo eliminado en cuartos
+        const loser = match.winner === match.team1.name ? match.team2.name : match.team1.name;
+        window.tournamentData.teamPhases[loser] = 'quarterfinals';
     });
     
     // Avanzar a semifinales
@@ -1052,6 +1090,10 @@ window.simulateAllKnockout = function() {
             match.winner = match.score1 > match.score2 ? match.team1.name : match.team2.name;
         }
         match.played = true;
+        
+        // Registrar equipo eliminado en semifinales
+        const loser = match.winner === match.team1.name ? match.team2.name : match.team1.name;
+        window.tournamentData.teamPhases[loser] = 'semifinals';
     });
     
     // Avanzar a final
@@ -1083,9 +1125,17 @@ window.simulateAllKnockout = function() {
     }
     final.played = true;
     
-    // Establecer campeón
+    // Establecer campeón y subcampeón
     const winner = final.winner === final.team1.name ? final.team1 : final.team2;
+    const runnerUp = final.winner === final.team1.name ? final.team2 : final.team1;
     stage.winner = winner;
+    
+    // Registrar fases finales
+    window.tournamentData.teamPhases[winner.name] = 'champion';
+    window.tournamentData.teamPhases[runnerUp.name] = 'final';
+    
+    // Resolver apuestas del torneo
+    await resolveAllTournamentBets(winner.name);
     
     // Renderizar
     renderKnockoutStage();
@@ -1096,13 +1146,33 @@ window.simulateAllKnockout = function() {
     }
     
     showNotification(`¡${winner.name} es CAMPEÓN DEL MUNDO! 🏆`, 'success');
+    
+    // Resolver apuestas automáticamente
+    await resolveAllTournamentBets(winner.name);
 }
 
 // Reiniciar todo el torneo
 window.restartTournament = async function() {
     // Confirmar con el usuario
-    if (!confirm('¿Estás seguro de que quieres reiniciar el torneo completo? Se generarán nuevos grupos aleatorios.')) {
+    if (!confirm('¿Estás seguro de que quieres reiniciar el torneo completo? Se generarán nuevos grupos aleatorios y se eliminarán todas las apuestas.')) {
         return;
+    }
+    
+    // Eliminar todas las apuestas del torneo
+    try {
+        const response = await fetch('api/tournament_bets.php?action=reset_bets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            console.log('✅ Apuestas eliminadas correctamente');
+            showNotification('🗑️ Todas las apuestas han sido eliminadas', 'info');
+        }
+    } catch (error) {
+        console.error('Error eliminando apuestas:', error);
     }
     
     // Reiniciar predicciones en BD
@@ -1236,4 +1306,397 @@ async function saveSimulationResults(results) {
         showNotification('⚠️ Error de conexión al guardar resultados', 'error');
     }
 }
+
+// =============================================
+// RESOLVER APUESTAS DEL TORNEO
+// =============================================
+
+// Resolver todas las apuestas pendientes cuando termina el torneo
+async function resolveAllTournamentBets(winnerTeamName) {
+    try {
+        console.log('🏆 Resolviendo apuestas para el campeón:', winnerTeamName);
+        console.log('📊 Fases alcanzadas:', window.tournamentData.teamPhases);
+        
+        const response = await fetch('api/tournament_bets.php?action=resolve_all_bets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                winner_team_name: winnerTeamName,
+                team_phases: window.tournamentData.teamPhases || {}
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('✅ Apuestas resueltas automáticamente');
+            if (data.resolved > 0) {
+                showNotification(`🏆 ¡Torneo finalizado! ${data.resolved} apuesta(s) resuelta(s). Revisa tus resultados abajo.`, 'success');
+            }
+            
+            // Recargar datos para actualizar la UI
+            if (typeof window.loadTournamentBetsData === 'function') {
+                await window.loadTournamentBetsData();
+            }
+        } else {
+            console.error('Error resolviendo apuestas:', data.message);
+        }
+    } catch (error) {
+        console.error('Error al resolver apuestas automáticamente:', error);
+    }
+}
+// ==================== SISTEMA DE APUESTAS DE TORNEO ====================
+
+// Cargar datos del sistema de apuestas
+window.loadTournamentBetsData = async function() {
+    try {
+        const response = await fetch('api/tournament_bets.php?action=get_data', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        // Verificar si la respuesta es JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Respuesta no es JSON:', text.substring(0, 200));
+            showNotification('Error: La sesi�n ha expirado. Por favor, inicia sesi�n nuevamente.', 'error');
+            return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            tournamentPoints = data.tournament_points || 0;
+            availableTeams = data.teams || [];
+            userBets = data.bets || [];
+            
+            // Actualizar UI
+            updateTournamentPointsDisplay();
+            populateTeamSelect();
+            renderBetsHistory();
+        } else {
+            console.error('Error cargando datos:', data.message);
+            showNotification(data.message || 'Error cargando datos de apuestas', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error de conexi�n con el servidor', 'error');
+    }
+}
+
+// Actualizar display de puntos
+function updateTournamentPointsDisplay() {
+    const display = document.getElementById('tournament-points-display');
+    const availableText = document.getElementById('points-available-text');
+    
+    if (display) {
+        display.textContent = tournamentPoints.toLocaleString();
+    }
+    if (availableText) {
+        availableText.textContent = tournamentPoints.toLocaleString();
+    }
+}
+
+// Poblar select de equipos
+function populateTeamSelect() {
+    const select = document.getElementById('team-select');
+    if (!select) return;
+    
+    // Limpiar opciones existentes excepto la primera
+    select.innerHTML = '<option value="">-- Selecciona un equipo --</option>';
+    
+    // Agregar equipos
+    availableTeams.forEach(team => {
+        const option = document.createElement('option');
+        option.value = team.id;
+        option.textContent = team.name;
+        option.dataset.teamName = team.name;
+        option.dataset.flag = team.flag_emoji;
+        select.appendChild(option);
+    });
+    
+    console.log(`✅ ${availableTeams.length} equipos cargados en el select`);
+}
+
+// Renderizar historial de apuestas
+function renderBetsHistory() {
+    const container = document.getElementById('bets-history-list');
+    if (!container) return;
+    
+    if (userBets.length === 0) {
+        container.innerHTML = `
+            <p style="text-align: center; color: var(--text-muted); padding: 40px;">
+                No has realizado apuestas aún.
+            </p>
+        `;
+        return;
+    }
+    
+    let html = '<div class="bets-list">';
+    
+    userBets.forEach(bet => {
+        const statusClass = bet.status === 'won' ? 'bet-won' : bet.status === 'lost' ? 'bet-lost' : 'bet-pending';
+        const statusText = bet.status === 'won' ? '✅ Ganada' : bet.status === 'lost' ? '❌ Perdida' : '⏳ Pendiente';
+        
+        // Manejo especial para cuando recupera exactamente lo apostado (cuartos de final)
+        let resultText, resultClass;
+        if (bet.points_result !== null && bet.points_result !== undefined) {
+            if (bet.points_result === 0) {
+                resultText = '0 pts (Recuperaste tu apuesta)';
+                resultClass = 'text-muted';
+            } else if (bet.points_result > 0) {
+                resultText = `+${bet.points_result} pts`;
+                resultClass = 'text-success';
+            } else {
+                resultText = `${bet.points_result} pts`;
+                resultClass = 'text-danger';
+            }
+        } else {
+            resultText = 'Pendiente';
+            resultClass = '';
+        }
+        
+        html += `
+            <div class="bet-card ${statusClass}">
+                <div class="bet-header">
+                    <span class="bet-team">${bet.team_name}</span>
+                    <span class="bet-status">${statusText}</span>
+                </div>
+                <div class="bet-details">
+                    <div class="bet-detail-item">
+                        <span class="detail-label">Apostado:</span>
+                        <span class="detail-value">${bet.points_bet} pts</span>
+                    </div>
+                    <div class="bet-detail-item">
+                        <span class="detail-label">Resultado:</span>
+                        <span class="detail-value ${resultClass}">${resultText}</span>
+                    </div>
+                    <div class="bet-detail-item">
+                        <span class="detail-label">Fecha:</span>
+                        <span class="detail-value">${new Date(bet.created_at).toLocaleDateString()}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Realizar apuesta
+window.placeTournamentBet = async function() {
+    const select = document.getElementById('team-select');
+    const pointsInput = document.getElementById('points-bet');
+    const btn = document.getElementById('place-bet-btn');
+    
+    const teamId = parseInt(select.value);
+    const pointsBet = parseInt(pointsInput.value);
+    
+    // Validaciones
+    if (!teamId) {
+        showNotification('Debes seleccionar un equipo', 'error');
+        return;
+    }
+    
+    if (!pointsBet || pointsBet <= 0) {
+        showNotification('Debes ingresar una cantidad v�lida de puntos', 'error');
+        return;
+    }
+    
+    if (pointsBet > tournamentPoints) {
+        showNotification('No tienes suficientes puntos', 'error');
+        return;
+    }
+    
+    // Deshabilitar bot�n
+    btn.disabled = true;
+    btn.textContent = ' Procesando...';
+    
+    try {
+        const response = await fetch('api/tournament_bets.php?action=place_bet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                team_id: teamId,
+                points_bet: pointsBet
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification(' Apuesta realizada correctamente', 'success');
+            
+            // Actualizar puntos
+            tournamentPoints = data.tournament_points;
+            updateTournamentPointsDisplay();
+            
+            // Limpiar formulario
+            select.value = '';
+            pointsInput.value = '';
+            
+            // Recargar historial
+            await window.loadTournamentBetsData();
+        } else {
+            showNotification(data.message || 'Error al realizar la apuesta', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error de conexi�n', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = ' Realizar Apuesta';
+    }
+}
+
+// Inicializar sistema de apuestas cuando se abre el apartado de torneo
+document.addEventListener('DOMContentLoaded', function() {
+    const tournamentBtn = document.getElementById('tournament-btn');
+    if (tournamentBtn) {
+        tournamentBtn.addEventListener('click', function() {
+            window.loadTournamentBetsData();
+        });
+    }
+});
+
+// =============================================
+// SISTEMA DE INTERCAMBIO DE PUNTOS
+// =============================================
+
+// Cargar saldos para intercambio
+async function loadExchangeBalances() {
+    try {
+        const response = await fetch('api/exchange_points.php?action=get_balances', {
+            credentials: 'include'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('exchange-tournament-points').textContent = data.tournament_points.toLocaleString();
+            document.getElementById('exchange-shop-points').textContent = data.shop_points.toLocaleString();
+        } else {
+            showNotification(data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error cargando saldos:', error);
+        showNotification('Error al cargar saldos', 'error');
+    }
+}
+
+// Calcular resultado del intercambio en tiempo real
+function calculateExchange(inputId) {
+    const input = document.getElementById(inputId);
+    const amount = parseInt(input.value) || 0;
+    
+    if (inputId === 'tournament-to-shop') {
+        // 100 torneo = 50 tienda
+        const result = Math.floor(amount / 2);
+        document.getElementById('tournament-to-shop-result').textContent = result.toLocaleString();
+    } else if (inputId === 'shop-to-tournament') {
+        // 50 tienda = 100 torneo
+        const result = amount * 2;
+        document.getElementById('shop-to-tournament-result').textContent = result.toLocaleString();
+    }
+}
+
+// Cambiar puntos de torneo a tienda
+async function exchangeTournamentToShop() {
+    const input = document.getElementById('tournament-to-shop');
+    const amount = parseInt(input.value);
+    
+    if (!amount || amount <= 0) {
+        showNotification('Ingresa una cantidad válida', 'error');
+        return;
+    }
+    
+    if (amount % 100 !== 0) {
+        showNotification('La cantidad debe ser múltiplo de 100', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('api/exchange_points.php?action=tournament_to_shop', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ amount: amount })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification(data.message, 'success');
+            
+            // Actualizar displays
+            document.getElementById('exchange-tournament-points').textContent = data.tournament_points.toLocaleString();
+            document.getElementById('exchange-shop-points').textContent = data.shop_points.toLocaleString();
+            document.getElementById('tournament-points-display').textContent = data.tournament_points.toLocaleString();
+            
+            // Limpiar input
+            input.value = '';
+            document.getElementById('tournament-to-shop-result').textContent = '0';
+        } else {
+            showNotification(data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error en intercambio:', error);
+        showNotification('Error al realizar el intercambio', 'error');
+    }
+}
+
+// Cambiar puntos de tienda a torneo
+async function exchangeShopToTournament() {
+    const input = document.getElementById('shop-to-tournament');
+    const amount = parseInt(input.value);
+    
+    if (!amount || amount <= 0) {
+        showNotification('Ingresa una cantidad válida', 'error');
+        return;
+    }
+    
+    if (amount % 50 !== 0) {
+        showNotification('La cantidad debe ser múltiplo de 50', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('api/exchange_points.php?action=shop_to_tournament', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ amount: amount })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification(data.message, 'success');
+            
+            // Actualizar displays
+            document.getElementById('exchange-tournament-points').textContent = data.tournament_points.toLocaleString();
+            document.getElementById('exchange-shop-points').textContent = data.shop_points.toLocaleString();
+            document.getElementById('tournament-points-display').textContent = data.tournament_points.toLocaleString();
+            
+            // Limpiar input
+            input.value = '';
+            document.getElementById('shop-to-tournament-result').textContent = '0';
+        } else {
+            showNotification(data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error en intercambio:', error);
+        showNotification('Error al realizar el intercambio', 'error');
+    }
+}
+
+// Hacer funciones disponibles globalmente
+window.loadExchangeBalances = loadExchangeBalances;
+window.calculateExchange = calculateExchange;
+window.exchangeTournamentToShop = exchangeTournamentToShop;
+window.exchangeShopToTournament = exchangeShopToTournament;
 

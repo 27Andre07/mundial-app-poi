@@ -1,4 +1,4 @@
-const API_BASE = 'https://mundialpoi-app.ngrok.app/api/';
+const API_BASE = 'api/';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Verificar autenticación y cargar puntos desde el servidor

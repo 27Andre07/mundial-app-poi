@@ -1,51 +1,19 @@
 // =============================================
-// SISTEMA DE PREDICCIONES DE TORNEO
+// SISTEMA DE APUESTAS AL CAMPEÓN DEL TORNEO
 // Mundial App - POI 2025
 // =============================================
 
-let currentPredictionJornada = 1;
-let currentLeaderboardJornada = 1;
-let userPredictions = {};
+let currentTournamentPoints = 1000;
+let currentBet = null;
+let allTeams = [];
+let tournamentWinner = null;
 
-// Definición de jornadas
-const JORNADAS = [
-    { id: 1, name: 'Jornada 1 - Fase de Grupos', phase: 'groups', matchday: 1 },
-    { id: 2, name: 'Jornada 2 - Fase de Grupos', phase: 'groups', matchday: 2 },
-    { id: 3, name: 'Jornada 3 - Fase de Grupos', phase: 'groups', matchday: 3 },
-    { id: 4, name: 'Octavos de Final', phase: 'knockout', round: 'r16' },
-    { id: 5, name: 'Cuartos de Final', phase: 'knockout', round: 'quarters' },
-    { id: 6, name: 'Semifinales', phase: 'knockout', round: 'semis' },
-    { id: 7, name: 'Final', phase: 'knockout', round: 'final' }
-];
-
-// Cambiar jornada de predicción
-function changePredictionJornada(delta) {
-    const newJornada = currentPredictionJornada + delta;
-    if (newJornada < 1 || newJornada > JORNADAS.length) return;
-    
-    currentPredictionJornada = newJornada;
-    loadPredictions();
-}
-
-// Cambiar jornada de leaderboard
-function changeLeaderboardJornada(delta) {
-    const newJornada = currentLeaderboardJornada + delta;
-    if (newJornada < 1 || newJornada > JORNADAS.length) return;
-    
-    currentLeaderboardJornada = newJornada;
-    loadLeaderboard();
-}
-
-// Cargar predicciones de la jornada actual
-async function loadPredictions() {
-    const jornada = JORNADAS[currentPredictionJornada - 1];
-    
-    // Actualizar nombre de jornada
-    document.getElementById('current-jornada-name').textContent = jornada.name;
-    
+// Cargar datos al iniciar
+async function loadBettingData() {
     try {
-        // Obtener partidos de la jornada
-        const response = await fetch(`https://mundialpoi-app.ngrok.app/api/predictions.php?action=get_matches&jornada=${currentPredictionJornada}`, {
+        // Usar el nuevo endpoint del sistema de apuestas
+        const response = await fetch('api/tournament_bets.php?action=get_data', {
+            method: 'GET',
             credentials: 'include'
         });
         
@@ -53,308 +21,325 @@ async function loadPredictions() {
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const text = await response.text();
-            console.error('Respuesta no es JSON:', text);
-            throw new Error('La respuesta del servidor no es JSON válido. Revisa que hayas ejecutado sql/install_predictions.bat');
+            console.error('Respuesta no es JSON:', text.substring(0, 200));
+            return;
         }
         
         const data = await response.json();
         
         if (data.success) {
-            renderPredictions(data.matches, data.user_predictions || {});
+            currentTournamentPoints = data.tournament_points || 0;
+            allTeams = data.teams || [];
+            currentBet = data.bets && data.bets.length > 0 ? data.bets[0] : null;
+            renderBettingInterface();
         } else {
-            document.getElementById('predictions-container').innerHTML = `
-                <p style="text-align: center; color: var(--text-muted); padding: 40px;">
-                    ${data.error || 'No hay partidos disponibles para esta jornada'}
-                </p>
-            `;
+            console.error('Error:', data.message);
         }
     } catch (error) {
-        console.error('Error cargando predicciones:', error);
-        document.getElementById('predictions-container').innerHTML = `
-            <p style="text-align: center; color: #ed4245; padding: 40px;">
-                ⚠️ Error: ${error.message || 'Error al cargar predicciones'}<br><br>
-                <small>Ejecuta: <code>sql/install_predictions.bat</code></small>
-            </p>
-        `;
+        console.error('Error cargando datos de apuestas:', error);
     }
 }
 
-// Renderizar formulario de predicciones
-function renderPredictions(matches, existingPredictions) {
+// Renderizar interfaz de apuestas
+function renderBettingInterface() {
     const container = document.getElementById('predictions-container');
     
-    if (!matches || matches.length === 0) {
-        container.innerHTML = `
-            <p style="text-align: center; color: var(--text-muted); padding: 40px;">
-                No hay partidos para predecir en esta jornada
-            </p>
-        `;
+    if (!container) return;
+    
+    // Si ya hay ganador declarado
+    if (tournamentWinner) {
+        renderResultsView(container);
         return;
     }
     
-    // Verificar si las predicciones están cerradas
-    const jornada = JORNADAS[currentPredictionJornada - 1];
-    const isClosed = checkIfJornadaClosed(jornada);
-    
-    let html = '';
-    
-    if (isClosed) {
-        html += `
-            <div class="prediction-warning" style="background: rgba(237, 66, 69, 0.1); border-left: 3px solid #ed4245; padding: 15px; margin-bottom: 20px; border-radius: 8px;">
-                🔒 Las predicciones para esta jornada están cerradas
+    // Si ya tiene apuesta
+    if (currentBet) {
+        renderExistingBet(container);
+    } else {
+        renderBettingForm(container);
+    }
+}
+
+// Mostrar formulario de apuesta
+function renderBettingForm(container) {
+    container.innerHTML = `
+        <div class="betting-container">
+            <div class="betting-header">
+                <h2>🏆 Apuesta al Campeón del Mundial</h2>
+                <p style="color: var(--text-muted); margin-top: 10px;">
+                    Selecciona el equipo que crees que ganará el torneo y apuesta tus puntos.
+                    Si aciertas, ¡ganarás 3x la cantidad apostada!
+                </p>
             </div>
-        `;
+            
+            <div class="points-display">
+                <span>Tus Puntos de Torneo:</span>
+                <strong id="tournament-points-display">${currentTournamentPoints} 🪙</strong>
+            </div>
+            
+            <div class="bet-form">
+                <label for="team-select">Selecciona el Equipo Ganador:</label>
+                <select id="team-select" class="team-selector">
+                    <option value="">-- Selecciona un equipo --</option>
+                    ${allTeams.map(team => `
+                        <option value="${team.id}" data-name="${team.name}">
+                            ${team.flag} ${team.name}
+                        </option>
+                    `).join('')}
+                </select>
+                
+                <label for="points-input">Cantidad de Puntos a Apostar:</label>
+                <input 
+                    type="number" 
+                    id="points-input" 
+                    class="points-input"
+                    min="1" 
+                    max="${currentTournamentPoints}"
+                    placeholder="Ingresa la cantidad"
+                />
+                
+                <div class="potential-winnings" id="potential-winnings" style="display: none;">
+                    <span>Ganancia potencial:</span>
+                    <strong id="potential-amount">0 🪙</strong>
+                </div>
+                
+                <button class="btn-place-bet" onclick="placeBet()">
+                    💰 Realizar Apuesta
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Event listeners
+    document.getElementById('points-input').addEventListener('input', updatePotentialWinnings);
+}
+
+// Mostrar apuesta existente
+function renderExistingBet(container) {
+    const team = allTeams.find(t => t.name === currentBet.team_name);
+    const teamFlag = team ? team.flag : '🏴';
+    
+    container.innerHTML = `
+        <div class="betting-container">
+            <div class="betting-header">
+                <h2>🏆 Tu Apuesta al Campeón</h2>
+            </div>
+            
+            <div class="points-display">
+                <span>Puntos de Torneo Disponibles:</span>
+                <strong id="tournament-points-display">${currentTournamentPoints} 🪙</strong>
+            </div>
+            
+            <div class="current-bet-card">
+                <div class="bet-team">
+                    <span class="bet-flag">${teamFlag}</span>
+                    <span class="bet-team-name">${currentBet.team_name}</span>
+                </div>
+                
+                <div class="bet-details">
+                    <div class="bet-detail-item">
+                        <span>Puntos Apostados:</span>
+                        <strong>${currentBet.points_bet} 🪙</strong>
+                    </div>
+                    <div class="bet-detail-item">
+                        <span>Ganancia Potencial:</span>
+                        <strong>${currentBet.points_bet * 3} 🪙</strong>
+                    </div>
+                    <div class="bet-detail-item">
+                        <span>Estado:</span>
+                        <strong class="bet-status-${currentBet.status}">
+                            ${getBetStatusText(currentBet.status)}
+                        </strong>
+                    </div>
+                </div>
+                
+                <button class="btn-change-bet" onclick="changeBet()">
+                    🔄 Cambiar Apuesta
+                </button>
+                
+                <p style="color: var(--text-muted); font-size: 13px; margin-top: 15px; text-align: center;">
+                    Puedes cambiar tu apuesta las veces que quieras antes de que termine el torneo
+                </p>
+            </div>
+        </div>
+    `;
+}
+
+// Mostrar resultados finales
+function renderResultsView(container) {
+    const won = currentBet && currentBet.team_name === tournamentWinner;
+    const team = allTeams.find(t => t.name === tournamentWinner);
+    const winnerFlag = team ? team.flag : '🏆';
+    
+    container.innerHTML = `
+        <div class="betting-container">
+            <div class="betting-header">
+                <h2>🏆 Torneo Finalizado</h2>
+            </div>
+            
+            <div class="points-display">
+                <span>Tus Puntos de Torneo:</span>
+                <strong id="tournament-points-display">${currentTournamentPoints} 🪙</strong>
+            </div>
+            
+            <div class="winner-announcement">
+                <h3>¡El Campeón es!</h3>
+                <div class="winner-display">
+                    <span class="winner-flag">${winnerFlag}</span>
+                    <span class="winner-name">${tournamentWinner}</span>
+                </div>
+            </div>
+            
+            ${currentBet ? `
+                <div class="bet-result-card ${won ? 'won' : 'lost'}">
+                    <h4>${won ? '🎉 ¡GANASTE!' : '😔 No acertaste'}</h4>
+                    
+                    <div class="bet-summary">
+                        <p>Tu apuesta: ${currentBet.team_name}</p>
+                        <p>Puntos apostados: ${currentBet.points_bet} 🪙</p>
+                        ${won ? `
+                            <p class="winning-amount">¡Ganaste ${currentBet.points_won} 🪙!</p>
+                        ` : `
+                            <p class="losing-amount">Perdiste ${currentBet.points_bet} 🪙</p>
+                        `}
+                    </div>
+                </div>
+            ` : `
+                <div class="no-bet-message">
+                    <p>No realizaste ninguna apuesta en este torneo</p>
+                </div>
+            `}
+        </div>
+    `;
+}
+
+// Actualizar ganancia potencial
+function updatePotentialWinnings() {
+    const pointsInput = document.getElementById('points-input');
+    const potentialDiv = document.getElementById('potential-winnings');
+    const potentialAmount = document.getElementById('potential-amount');
+    
+    const points = parseInt(pointsInput.value) || 0;
+    
+    if (points > 0 && points <= currentTournamentPoints) {
+        potentialDiv.style.display = 'flex';
+        potentialAmount.textContent = `${points * 3} 🪙`;
+    } else {
+        potentialDiv.style.display = 'none';
+    }
+}
+
+// Realizar apuesta
+async function placeBet() {
+    const teamSelect = document.getElementById('team-select');
+    const pointsInput = document.getElementById('points-input');
+    
+    const teamId = parseInt(teamSelect.value);
+    const teamName = teamSelect.options[teamSelect.selectedIndex]?.dataset.name;
+    const pointsBet = parseInt(pointsInput.value);
+    
+    // Validaciones
+    if (!teamId || !teamName) {
+        showNotification('Por favor selecciona un equipo', 'error');
+        return;
     }
     
-    html += '<div class="predictions-grid">';
+    if (!pointsBet || pointsBet <= 0) {
+        showNotification('Por favor ingresa una cantidad válida', 'error');
+        return;
+    }
     
-    matches.forEach(match => {
-        const prediction = existingPredictions[match.id] || null;
-        const isLocked = isClosed || match.status === 'finished';
-        
-        html += `
-            <div class="prediction-match-card ${isLocked ? 'locked' : ''}">
-                <div class="match-info">
-                    <div class="match-date">${formatMatchDate(match.date)}</div>
-                    <div class="match-teams">
-                        <div class="team team-home">
-                            <span class="team-flag">${getCountryFlag(match.home_team)}</span>
-                            <span class="team-name">${match.home_team}</span>
-                        </div>
-                        <span class="vs">VS</span>
-                        <div class="team team-away">
-                            <span class="team-name">${match.away_team}</span>
-                            <span class="team-flag">${getCountryFlag(match.away_team)}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="prediction-options">
-                    <button class="prediction-btn ${prediction === 'home' ? 'selected' : ''}" 
-                            onclick="selectPrediction(${match.id}, 'home')"
-                            ${isLocked ? 'disabled' : ''}>
-                        Gana ${match.home_team}
-                    </button>
-                    <button class="prediction-btn ${prediction === 'draw' ? 'selected' : ''}" 
-                            onclick="selectPrediction(${match.id}, 'draw')"
-                            ${isLocked ? 'disabled' : ''}>
-                        Empate
-                    </button>
-                    <button class="prediction-btn ${prediction === 'away' ? 'selected' : ''}" 
-                            onclick="selectPrediction(${match.id}, 'away')"
-                            ${isLocked ? 'disabled' : ''}>
-                        Gana ${match.away_team}
-                    </button>
-                </div>
-                
-                ${match.status === 'finished' ? `
-                    <div class="match-result">
-                        Resultado: ${match.home_score} - ${match.away_score}
-                        ${prediction ? (checkPredictionCorrect(prediction, match) ? 
-                            '<span class="correct">✅ +25 pts</span>' : 
-                            '<span class="incorrect">❌ 0 pts</span>') : ''}
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    });
-    
-    html += '</div>';
-    container.innerHTML = html;
-    
-    // Deshabilitar botón de guardar si está cerrado
-    document.getElementById('submit-predictions-btn').disabled = isClosed;
-}
-
-// Seleccionar predicción
-function selectPrediction(matchId, prediction) {
-    userPredictions[matchId] = prediction;
-    
-    // Buscar la card del partido específico
-    const cards = document.querySelectorAll('.prediction-match-card');
-    cards.forEach(card => {
-        const buttons = card.querySelectorAll('.prediction-btn');
-        const cardMatchId = Array.from(buttons).find(btn => {
-            const onclick = btn.getAttribute('onclick');
-            return onclick && onclick.includes(`selectPrediction(${matchId},`);
-        });
-        
-        if (cardMatchId) {
-            // Remover selected de todos los botones de esta card
-            buttons.forEach(btn => btn.classList.remove('selected'));
-            
-            // Agregar selected al botón clickeado
-            buttons.forEach(btn => {
-                const onclick = btn.getAttribute('onclick');
-                if (onclick && onclick.includes(`'${prediction}'`)) {
-                    btn.classList.add('selected');
-                }
-            });
-        }
-    });
-}
-
-// Guardar todas las predicciones
-async function submitPredictions() {
-    if (Object.keys(userPredictions).length === 0) {
-        showNotification('Selecciona al menos una predicción', 'error');
+    if (pointsBet > currentTournamentPoints) {
+        showNotification('No tienes suficientes puntos', 'error');
         return;
     }
     
     try {
-        const response = await fetch('https://mundialpoi-app.ngrok.app/api/predictions.php', {
+        const response = await fetch('api/tournament_bets.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({
-                action: 'save_predictions',
-                jornada: currentPredictionJornada,
-                predictions: userPredictions
+                action: 'place_bet',
+                team_id: teamId,
+                team_name: teamName,
+                points_bet: pointsBet
             })
         });
         
         const data = await response.json();
         
         if (data.success) {
-            showNotification('✅ Predicciones guardadas exitosamente', 'success');
-            userPredictions = {};
-            loadPredictions();
+            showNotification('✅ Apuesta realizada exitosamente', 'success');
+            currentTournamentPoints = data.tournament_points;
+            await loadBettingData();
         } else {
-            showNotification(data.error || 'Error al guardar predicciones', 'error');
+            showNotification(data.error || 'Error al realizar apuesta', 'error');
         }
     } catch (error) {
-        console.error('Error guardando predicciones:', error);
-        showNotification('Error al guardar predicciones', 'error');
+        console.error('Error:', error);
+        showNotification('Error de conexión', 'error');
     }
 }
 
-// Cargar leaderboard
-async function loadLeaderboard() {
-    const jornada = JORNADAS[currentLeaderboardJornada - 1];
-    document.getElementById('current-leaderboard-jornada').textContent = jornada.name;
-    
+// Cambiar apuesta
+function changeBet() {
+    renderBettingForm(document.getElementById('predictions-container'));
+}
+
+// Obtener texto de estado
+function getBetStatusText(status) {
+    switch (status) {
+        case 'pending': return '⏳ Pendiente';
+        case 'won': return '✅ Ganada';
+        case 'lost': return '❌ Perdida';
+        default: return status;
+    }
+}
+
+// Actualizar puntos en el header
+async function updateTournamentPointsDisplay() {
     try {
-        const response = await fetch(`https://mundialpoi-app.ngrok.app/api/predictions.php?action=get_leaderboard&jornada=${currentLeaderboardJornada}`, {
+        const response = await fetch('api/tournament_bets.php?action=get_tournament_points', {
             credentials: 'include'
         });
         const data = await response.json();
         
         if (data.success) {
-            renderLeaderboard(data.leaderboard, data.user_position);
-        } else {
-            document.getElementById('leaderboard-container').innerHTML = `
-                <p style="text-align: center; color: var(--text-muted); padding: 40px;">
-                    ${data.error || 'Aún no hay resultados para esta jornada'}
-                </p>
-            `;
+            currentTournamentPoints = data.tournament_points;
+            const display = document.getElementById('tournament-points-header');
+            if (display) {
+                display.textContent = `${currentTournamentPoints} 🪙`;
+            }
         }
     } catch (error) {
-        console.error('Error cargando leaderboard:', error);
+        console.error('Error actualizando puntos:', error);
     }
 }
 
-// Renderizar leaderboard
-function renderLeaderboard(leaderboard, userPosition) {
-    const container = document.getElementById('leaderboard-container');
-    
-    if (!leaderboard || leaderboard.length === 0) {
-        container.innerHTML = `
-            <p style="text-align: center; color: var(--text-muted); padding: 40px;">
-                Aún no hay resultados para esta jornada
-            </p>
-        `;
-        return;
-    }
-    
-    let html = '<div class="leaderboard-table">';
-    html += '<table>';
-    html += '<thead><tr><th>Pos</th><th>Usuario</th><th>Puntos</th><th>Aciertos</th><th>Recompensa</th></tr></thead>';
-    html += '<tbody>';
-    
-    leaderboard.forEach((entry, index) => {
-        const position = index + 1;
-        const isCurrentUser = entry.user_id === currentUser.id;
-        const reward = getReward(position);
-        const medal = position === 1 ? '🏆' : position === 2 ? '🥈' : position === 3 ? '🥉' : '';
-        
-        html += `
-            <tr class="${isCurrentUser ? 'current-user' : ''}">
-                <td>${medal} ${position}</td>
-                <td>${entry.username}</td>
-                <td>${entry.points} pts</td>
-                <td>${entry.correct_predictions || 0}</td>
-                <td>${reward.points} PR ${reward.badge ? reward.badge : ''}</td>
-            </tr>
-        `;
-    });
-    
-    html += '</tbody></table></div>';
-    
-    if (userPosition && userPosition > 10) {
-        html += `
-            <div class="user-position" style="margin-top: 20px; padding: 15px; background: rgba(88, 101, 242, 0.1); border-radius: 8px; text-align: center;">
-                Tu posición: #${userPosition} - 10 PR
-            </div>
-        `;
-    }
-    
-    container.innerHTML = html;
-}
-
-// Calcular recompensa según posición
-function getReward(position) {
-    if (position === 1) return { points: 500, badge: '👑' };
-    if (position === 2) return { points: 300, badge: '' };
-    if (position === 3) return { points: 150, badge: '' };
-    if (position <= 10) return { points: 50, badge: '' };
-    return { points: 10, badge: '' };
-}
-
-// Verificar si jornada está cerrada
-function checkIfJornadaClosed(jornada) {
-    // Por ahora, simple check - mejorar con fecha real de inicio
-    return false;
-}
-
-// Verificar si predicción es correcta
-function checkPredictionCorrect(prediction, match) {
-    if (match.home_score > match.away_score) {
-        return prediction === 'home';
-    } else if (match.away_score > match.home_score) {
-        return prediction === 'away';
-    } else {
-        return prediction === 'draw';
-    }
-}
-
-// Formatear fecha de partido
-function formatMatchDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleString('es-MX', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-// Obtener bandera del país (emoji)
-function getCountryFlag(country) {
-    const flags = {
-        'México': '🇲🇽', 'Brasil': '🇧🇷', 'Argentina': '🇦🇷', 'España': '🇪🇸',
-        'Alemania': '🇩🇪', 'Francia': '🇫🇷', 'Inglaterra': '🏴󐁧󐁢󐁥󐁮󐁧󐁿', 'Italia': '🇮🇹',
-        'Portugal': '🇵🇹', 'Países Bajos': '🇳🇱', 'Bélgica': '🇧🇪', 'Uruguay': '🇺🇾',
-        'Colombia': '🇨🇴', 'Japón': '🇯🇵', 'Corea del Sur': '🇰🇷', 'Estados Unidos': '🇺🇸'
-    };
-    return flags[country] || '🏴';
-}
-
-// Inicializar cuando se muestra la pestaña
+// Inicializar cuando se muestra la pestaña de predicciones
 document.addEventListener('DOMContentLoaded', () => {
-    if (window.location.hash === '#predictions') {
-        loadPredictions();
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            const target = mutation.target;
+            
+            if (target.id === 'tab-predictions' && target.classList.contains('active')) {
+                loadBettingData();
+                updateTournamentPointsDisplay();
+            }
+        });
+    });
+    
+    const predictionsTab = document.getElementById('tab-predictions');
+    
+    if (predictionsTab) {
+        observer.observe(predictionsTab, { attributes: true, attributeFilter: ['class'] });
+        
+        if (predictionsTab.classList.contains('active')) {
+            loadBettingData();
+            updateTournamentPointsDisplay();
+        }
     }
 });
 
-console.log('📊 Módulo de predicciones cargado');
+console.log('🎰 Sistema de apuestas cargado');

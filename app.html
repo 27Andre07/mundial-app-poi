@@ -90,9 +90,13 @@
         <main class="tournament-content-wrapper">
             <header class="tournament-header">
                 <h2>🏆 Copa Mundial FIFA 2026</h2>
+                <div class="tournament-points-display">
+                    <span class="points-label">Puntos de Torneo:</span>
+                    <span class="points-value" id="tournament-points-display">0</span>
+                </div>
                 <div class="tournament-tabs">
                     <button class="tab-btn active" onclick="showTournamentTab('predictions')">🔮 Predicciones</button>
-                    <button class="tab-btn" onclick="showTournamentTab('leaderboard')">🏅 Leaderboard</button>
+                    <button class="tab-btn" onclick="showTournamentTab('exchange')">💱 Cambiar Puntos</button>
                     <button class="tab-btn" onclick="showTournamentTab('groups')">Fase de Grupos</button>
                     <button class="tab-btn" onclick="showTournamentTab('knockout')">Eliminación Directa</button>
                     <button class="tab-btn" onclick="showTournamentTab('standings')">Clasificación</button>
@@ -103,37 +107,97 @@
                 <!-- Predicciones -->
                 <div id="tab-predictions" class="tab-content active">
                     <div class="predictions-header">
-                        <h3>🔮 Predicciones de Jornada</h3>
-                        <div class="jornada-selector">
-                            <button class="btn-secondary" onclick="changePredictionJornada(-1)">← Anterior</button>
-                            <span id="current-jornada-name">Jornada 1 - Fase de Grupos</span>
-                            <button class="btn-secondary" onclick="changePredictionJornada(1)">Siguiente →</button>
+                        <h3>🔮 Apuesta por tu Equipo Ganador</h3>
+                        <p class="predictions-subtitle">Selecciona un equipo y apuesta tus puntos de torneo. Al finalizar la eliminación directa conocerás tu resultado.</p>
+                    </div>
+
+                    <!-- Formulario de Apuesta -->
+                    <div class="bet-form-container">
+                        <div class="bet-form-card">
+                            <div class="form-group">
+                                <label for="team-select">🏴 Selecciona un Equipo</label>
+                                <select id="team-select" class="team-select">
+                                    <option value="">-- Selecciona un equipo --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="points-bet">💰 Puntos a Apostar</label>
+                                <input type="number" id="points-bet" class="points-input" min="1" placeholder="Ingresa cantidad de puntos">
+                                <small class="points-available">Puntos disponibles: <span id="points-available-text">0</span></small>
+                            </div>
+                            <button class="btn btn-primary btn-bet" id="place-bet-btn" onclick="placeTournamentBet()">🎯 Realizar Apuesta</button>
                         </div>
                     </div>
-                    <div id="predictions-container">
-                        <p style="text-align: center; color: var(--text-muted); padding: 40px;">
-                            Cargando predicciones...
-                        </p>
-                    </div>
-                    <div class="predictions-actions" style="text-align: center; margin-top: 20px;">
-                        <button class="btn btn-primary" id="submit-predictions-btn" onclick="submitPredictions()">💾 Guardar Predicciones</button>
+
+                    <!-- Historial de Apuestas -->
+                    <div class="bets-history-container">
+                        <h3>📊 Mis Apuestas</h3>
+                        <div id="bets-history-list">
+                            <p style="text-align: center; color: var(--text-muted); padding: 40px;">
+                                No has realizado apuestas aún.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Leaderboard -->
-                <div id="tab-leaderboard" class="tab-content">
-                    <div class="leaderboard-header">
-                        <h3>🏅 Tabla de Clasificación</h3>
-                        <div class="leaderboard-selector">
-                            <button class="btn-secondary" onclick="changeLeaderboardJornada(-1)">← Anterior</button>
-                            <span id="current-leaderboard-jornada">Jornada 1</span>
-                            <button class="btn-secondary" onclick="changeLeaderboardJornada(1)">Siguiente →</button>
-                        </div>
+                <!-- Intercambio de Puntos -->
+                <div id="tab-exchange" class="tab-content">
+                    <div class="exchange-header">
+                        <h3>💱 Intercambio de Puntos</h3>
+                        <p class="exchange-subtitle">Intercambia entre puntos de torneo y puntos de tienda</p>
                     </div>
-                    <div id="leaderboard-container">
-                        <p style="text-align: center; color: var(--text-muted); padding: 40px;">
-                            Cargando leaderboard...
-                        </p>
+
+                    <div class="exchange-container">
+                        <!-- Saldos Actuales -->
+                        <div class="balances-display">
+                            <div class="balance-card tournament-balance">
+                                <div class="balance-icon">🏆</div>
+                                <div class="balance-info">
+                                    <span class="balance-label">Puntos de Torneo</span>
+                                    <span class="balance-amount" id="exchange-tournament-points">0</span>
+                                </div>
+                            </div>
+                            <div class="balance-card shop-balance">
+                                <div class="balance-icon">🛒</div>
+                                <div class="balance-info">
+                                    <span class="balance-label">Puntos de Tienda</span>
+                                    <span class="balance-amount" id="exchange-shop-points">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tasa de Cambio -->
+                        <div class="exchange-rate">
+                            <div class="rate-info">
+                                <span class="rate-icon">💰</span>
+                                <span class="rate-text">Tasa de Cambio: <strong>100</strong> pts torneo = <strong>50</strong> pts tienda</span>
+                            </div>
+                        </div>
+
+                        <!-- Formularios de Intercambio -->
+                        <div class="exchange-forms">
+                            <!-- Torneo → Tienda -->
+                            <div class="exchange-form-card">
+                                <h4>🏆 → 🛒 Torneo a Tienda</h4>
+                                <div class="form-group">
+                                    <label for="tournament-to-shop">Puntos de Torneo</label>
+                                    <input type="number" id="tournament-to-shop" class="exchange-input" min="100" step="100" placeholder="100" oninput="calculateExchange('tournament-to-shop')">
+                                    <small class="exchange-hint">Recibirás: <span id="tournament-to-shop-result">0</span> pts de tienda</small>
+                                </div>
+                                <button class="btn btn-primary" onclick="exchangeTournamentToShop()">Cambiar a Tienda</button>
+                            </div>
+
+                            <!-- Tienda → Torneo -->
+                            <div class="exchange-form-card">
+                                <h4>🛒 → 🏆 Tienda a Torneo</h4>
+                                <div class="form-group">
+                                    <label for="shop-to-tournament">Puntos de Tienda</label>
+                                    <input type="number" id="shop-to-tournament" class="exchange-input" min="50" step="50" placeholder="50" oninput="calculateExchange('shop-to-tournament')">
+                                    <small class="exchange-hint">Recibirás: <span id="shop-to-tournament-result">0</span> pts de torneo</small>
+                                </div>
+                                <button class="btn btn-primary" onclick="exchangeShopToTournament()">Cambiar a Torneo</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

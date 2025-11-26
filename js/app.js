@@ -1,4 +1,4 @@
-const API_BASE = 'https://mundialpoi-app.ngrok.app/api/';
+const API_BASE = 'api/';
 
 // Variables globales
 let currentUser = null;
@@ -522,6 +522,10 @@ function setupEventListeners() {
                 if (firstGroup) firstGroup.click();
             } else {
                 showTournamentView();
+                // Cargar datos de apuestas cuando se abre el torneo
+                if (typeof window.loadTournamentBetsData === 'function') {
+                    window.loadTournamentBetsData();
+                }
             }
         });
     }
@@ -544,7 +548,114 @@ function setupEventListeners() {
             hideTournamentView();
         }
     });
+    
+    // Setup responsive mobile menu
+    setupMobileMenu();
 }
+
+// =============================================
+// FUNCIONALIDAD RESPONSIVE MÓVIL
+// =============================================
+
+function setupMobileMenu() {
+    // Detectar si estamos en móvil
+    const isMobile = window.innerWidth <= 768;
+    
+    if (!isMobile) return;
+    
+    // Agregar botón de menú al header si no existe
+    const chatHeader = document.querySelector('.chat-header h2');
+    if (chatHeader && !document.getElementById('mobile-menu-toggle')) {
+        const menuBtn = document.createElement('span');
+        menuBtn.id = 'mobile-menu-toggle';
+        menuBtn.innerHTML = '☰';
+        menuBtn.style.cssText = 'cursor: pointer; margin-right: 12px; font-size: 24px;';
+        menuBtn.onclick = toggleMobileChannels;
+        chatHeader.parentElement.insertBefore(menuBtn, chatHeader);
+    }
+    
+    // Agregar botón de menú al header del torneo si no existe
+    const tournamentHeader = document.querySelector('.tournament-header h2');
+    if (tournamentHeader && !document.getElementById('tournament-menu-toggle')) {
+        const menuBtn = document.createElement('span');
+        menuBtn.id = 'tournament-menu-toggle';
+        menuBtn.innerHTML = '☰';
+        menuBtn.style.cssText = 'cursor: pointer; margin-right: 12px; font-size: 24px;';
+        menuBtn.onclick = toggleMobileChannels;
+        tournamentHeader.parentElement.insertBefore(menuBtn, tournamentHeader);
+    }
+    
+    // Cerrar menú al hacer click fuera
+    document.addEventListener('click', function(e) {
+        const channelsColumn = document.querySelector('.channels-column');
+        const dmColumn = document.querySelector('.dm-column');
+        const menuBtn = document.getElementById('mobile-menu-toggle');
+        const tournamentMenuBtn = document.getElementById('tournament-menu-toggle');
+        
+        if (channelsColumn && channelsColumn.classList.contains('show')) {
+            if (!channelsColumn.contains(e.target) && e.target !== menuBtn && e.target !== tournamentMenuBtn) {
+                channelsColumn.classList.remove('show');
+            }
+        }
+        
+        if (dmColumn && dmColumn.classList.contains('show')) {
+            if (!dmColumn.contains(e.target) && e.target !== menuBtn && e.target !== tournamentMenuBtn) {
+                dmColumn.classList.remove('show');
+            }
+        }
+    });
+    
+    // Cerrar menú al seleccionar un canal
+    const channelLinks = document.querySelectorAll('.channel');
+    channelLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            const channelsColumn = document.querySelector('.channels-column');
+            if (channelsColumn) {
+                channelsColumn.classList.remove('show');
+            }
+        });
+    });
+}
+
+function toggleMobileChannels() {
+    const channelsColumn = document.querySelector('.channels-column');
+    const dmColumn = document.querySelector('.dm-column');
+    
+    // Si está visible la columna de DMs, mostrar esa
+    if (dmColumn && !dmColumn.classList.contains('d-none')) {
+        dmColumn.classList.toggle('show');
+        if (channelsColumn) {
+            channelsColumn.classList.remove('show');
+        }
+    } else if (channelsColumn) {
+        // Si no, mostrar la columna de canales
+        channelsColumn.classList.toggle('show');
+    }
+}
+
+// Hacer función global
+window.toggleMobileChannels = toggleMobileChannels;
+
+// Re-ejecutar setup al cambiar tamaño de ventana
+window.addEventListener('resize', function() {
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        setupMobileMenu();
+    } else {
+        // Limpiar botones de menú en desktop
+        const menuBtn = document.getElementById('mobile-menu-toggle');
+        const tournamentMenuBtn = document.getElementById('tournament-menu-toggle');
+        if (menuBtn) menuBtn.remove();
+        if (tournamentMenuBtn) tournamentMenuBtn.remove();
+        
+        // Remover clases show
+        const channelsColumn = document.querySelector('.channels-column');
+        const dmColumn = document.querySelector('.dm-column');
+        if (channelsColumn) channelsColumn.classList.remove('show');
+        if (dmColumn) dmColumn.classList.remove('show');
+    }
+});
 
 async function sendMessage() {
     // Si estamos en DM, usar función de DM
@@ -2074,12 +2185,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const target = mutation.target;
             
             if (target.id === 'tab-predictions' && target.classList.contains('active')) {
-                loadPredictions();
-                setupPredictionsListeners();
+                // Cargar datos de apuestas del nuevo sistema
+                if (typeof window.loadTournamentBetsData === 'function') {
+                    window.loadTournamentBetsData();
+                }
             }
             if (target.id === 'tab-leaderboard' && target.classList.contains('active')) {
-                loadLeaderboard();
-                setupPredictionsListeners();
+                if (typeof loadLeaderboard === 'function') {
+                    loadLeaderboard();
+                }
             }
         });
     });
@@ -2092,8 +2206,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Si ya está activo al cargar
         if (predictionsTab.classList.contains('active')) {
-            loadPredictions();
-            setupPredictionsListeners();
+            if (typeof window.loadTournamentBetsData === 'function') {
+                window.loadTournamentBetsData();
+            }
         }
     }
     

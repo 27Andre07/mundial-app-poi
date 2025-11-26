@@ -1,0 +1,336 @@
+/* =============================================
+   SISTEMA DE APUESTAS AL CAMPEÓN
+   ============================================= */
+
+.betting-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+}
+
+.betting-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.betting-header h2 {
+    color: var(--primary-color);
+    font-size: 28px;
+    margin: 0 0 10px 0;
+}
+
+.points-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    background: var(--background-light);
+    border-radius: 12px;
+    margin-bottom: 30px;
+    font-size: 18px;
+}
+
+.points-display strong {
+    color: var(--success-color);
+    font-size: 24px;
+}
+
+/* Formulario de apuesta */
+.bet-form {
+    background: var(--background-medium);
+    padding: 30px;
+    border-radius: 12px;
+    border: 2px solid var(--background-light);
+}
+
+.bet-form label {
+    display: block;
+    color: var(--text-color);
+    font-weight: 600;
+    margin-bottom: 10px;
+    margin-top: 20px;
+}
+
+.bet-form label:first-child {
+    margin-top: 0;
+}
+
+.team-selector {
+    width: 100%;
+    padding: 15px;
+    background: var(--background-dark);
+    color: var(--text-color);
+    border: 2px solid var(--background-light);
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.team-selector:hover,
+.team-selector:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.points-input {
+    width: 100%;
+    padding: 15px;
+    background: var(--background-dark);
+    color: var(--text-color);
+    border: 2px solid var(--background-light);
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.points-input:hover,
+.points-input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.potential-winnings {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: rgba(67, 181, 129, 0.1);
+    border: 2px solid var(--success-color);
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.potential-winnings strong {
+    color: var(--success-color);
+    font-size: 20px;
+}
+
+.btn-place-bet {
+    width: 100%;
+    padding: 18px;
+    margin-top: 30px;
+    background: linear-gradient(135deg, var(--success-color), #36a86a);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(67, 181, 129, 0.3);
+}
+
+.btn-place-bet:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(67, 181, 129, 0.5);
+}
+
+/* Tarjeta de apuesta existente */
+.current-bet-card {
+    background: var(--background-medium);
+    padding: 30px;
+    border-radius: 12px;
+    border: 2px solid var(--primary-color);
+}
+
+.bet-team {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    padding: 20px;
+    background: var(--background-dark);
+    border-radius: 12px;
+    margin-bottom: 25px;
+}
+
+.bet-flag {
+    font-size: 48px;
+}
+
+.bet-team-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.bet-details {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.bet-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: var(--background-light);
+    border-radius: 8px;
+}
+
+.bet-detail-item strong {
+    color: var(--primary-color);
+    font-size: 18px;
+}
+
+.bet-status-pending {
+    color: #faa61a;
+}
+
+.bet-status-won {
+    color: var(--success-color);
+}
+
+.bet-status-lost {
+    color: var(--danger-color);
+}
+
+.btn-change-bet {
+    width: 100%;
+    padding: 15px;
+    background: var(--background-light);
+    color: var(--text-color);
+    border: 2px solid var(--primary-color);
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-change-bet:hover {
+    background: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+/* Anuncio de ganador */
+.winner-announcement {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2));
+    border-radius: 15px;
+    border: 3px solid #FFD700;
+    margin-bottom: 30px;
+}
+
+.winner-announcement h3 {
+    color: #FFD700;
+    font-size: 24px;
+    margin: 0 0 20px 0;
+}
+
+.winner-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.winner-flag {
+    font-size: 64px;
+}
+
+.winner-name {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+/* Resultado de apuesta */
+.bet-result-card {
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.bet-result-card.won {
+    background: rgba(67, 181, 129, 0.15);
+    border: 3px solid var(--success-color);
+}
+
+.bet-result-card.lost {
+    background: rgba(237, 66, 69, 0.15);
+    border: 3px solid var(--danger-color);
+}
+
+.bet-result-card h4 {
+    font-size: 28px;
+    margin: 0 0 20px 0;
+}
+
+.bet-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 16px;
+}
+
+.winning-amount {
+    color: var(--success-color);
+    font-size: 24px;
+    font-weight: 700;
+    margin-top: 10px;
+}
+
+.losing-amount {
+    color: var(--danger-color);
+    font-size: 18px;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.no-bet-message {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+    font-size: 18px;
+}
+
+/* Header de puntos de torneo */
+#tournament-points-header {
+    padding: 8px 16px;
+    background: rgba(67, 181, 129, 0.2);
+    border-radius: 20px;
+    font-weight: 700;
+    color: var(--success-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .betting-container {
+        padding: 15px;
+    }
+    
+    .bet-form {
+        padding: 20px;
+    }
+    
+    .bet-team {
+        flex-direction: column;
+    }
+    
+    .bet-flag {
+        font-size: 36px;
+    }
+    
+    .bet-team-name {
+        font-size: 20px;
+    }
+    
+    .winner-display {
+        flex-direction: column;
+    }
+    
+    .winner-flag {
+        font-size: 48px;
+    }
+    
+    .winner-name {
+        font-size: 24px;
+    }
+}

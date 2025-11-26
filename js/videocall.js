@@ -3,8 +3,17 @@
 // Mundial App - POI 2025
 // =============================================
 
-// Conexión a Socket.IO
-const socket = io('https://mundialpoi-ws.ngrok.app');
+// Conexión a Socket.IO - Detectar automáticamente el servidor
+const getSocketURL = () => {
+    // Si estamos en ngrok, usar el servidor WebSocket de ngrok
+    if (window.location.hostname.includes('ngrok')) {
+        return 'https://mundialpoi-ws.ngrok.app';
+    }
+    // Si estamos en localhost, usar el puerto 3000
+    return 'http://localhost:3000';
+};
+
+const socket = io(getSocketURL());
 
 // Variables globales de videollamada
 let localStream = null;
